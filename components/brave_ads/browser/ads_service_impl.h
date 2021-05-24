@@ -24,6 +24,7 @@
 #include "bat/ads/mojom.h"
 #include "bat/ads/public/interfaces/ads.mojom.h"
 #include "bat/ledger/mojom_structs.h"
+#include "brave/components/brave_adaptive_captcha/brave_adaptive_captcha.h"
 #include "brave/components/brave_ads/browser/ads_service.h"
 #include "brave/components/brave_ads/browser/background_helper.h"
 #include "brave/components/brave_ads/browser/component_updater/resource_component.h"
@@ -65,6 +66,8 @@ class SimpleURLLoader;
 
 namespace brave_ads {
 
+class AdsTooltipsController;
+
 class AdsServiceImpl : public AdsService,
                        public ads::AdsClient,
                        public history::HistoryServiceObserver,
@@ -105,6 +108,10 @@ class AdsServiceImpl : public AdsService,
   void OnCloseAdNotification(const std::string& notification_id,
                              const bool by_user) override;
   void OnClickAdNotification(const std::string& notification_id) override;
+
+  void OnTooltipShow(const std::string& tooltip_id) override;
+  void OnTooltipOkButtonPressed(const std::string& tooltip_id) override;
+  void OnTooltipCancelButtonPressed(const std::string& tooltip_id) override;
 
   void ChangeLocale(const std::string& locale) override;
 
@@ -382,6 +389,15 @@ class AdsServiceImpl : public AdsService,
 
   std::string LoadResourceForId(const std::string& id) override;
 
+  void GetScheduledCaptcha(const std::string& payment_id,
+                           ads::GetScheduledCaptchaCallback callback) override;
+
+  void OnGetScheduledCaptcha(ads::GetScheduledCaptchaCallback callback,
+                             const std::string& captcha_id);
+
+  void ShowScheduledCaptchaNotification(const std::string& payment_id,
+                                        const std::string& captcha_id) override;
+
   void RunDBTransaction(ads::DBTransactionPtr transaction,
                         ads::RunDBTransactionCallback callback) override;
 
@@ -436,6 +452,8 @@ class AdsServiceImpl : public AdsService,
 
   history::HistoryService* history_service_;  // NOT OWNED
 
+  std::unique_ptr<AdsTooltipsController> ads_tooltips_controller_;
+
   bool is_initialized_ = false;
 
   bool is_upgrading_from_pre_brave_ads_build_;
@@ -472,6 +490,8 @@ class AdsServiceImpl : public AdsService,
 
   // The task tracker for the HistoryService callbacks.
   base::CancelableTaskTracker task_tracker_;
+
+  brave_adaptive_captcha::BraveAdaptiveCaptcha adaptive_captcha_;
 };
 
 }  // namespace brave_ads

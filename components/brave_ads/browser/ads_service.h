@@ -94,6 +94,10 @@ class AdsService : public KeyedService {
                                      const bool by_user) = 0;
   virtual void OnClickAdNotification(const std::string& notification_id) = 0;
 
+  virtual void OnTooltipShow(const std::string& tooltip_id) = 0;
+  virtual void OnTooltipOkButtonPressed(const std::string& tooltip_id) = 0;
+  virtual void OnTooltipCancelButtonPressed(const std::string& tooltip_id) = 0;
+
   virtual void ChangeLocale(const std::string& locale) = 0;
 
   virtual void OnHtmlLoaded(const SessionID& tab_id,
