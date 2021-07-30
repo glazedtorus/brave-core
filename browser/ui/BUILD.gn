@@ -382,6 +382,7 @@ source_set("ui") {
       "views/brave_actions/brave_action_view.h",
       "views/brave_actions/brave_actions_container.cc",
       "views/brave_actions/brave_actions_container.h",
+      "views/brave_actions/brave_actions_container_delegate.h",
       "views/location_bar/brave_location_bar_view.cc",
       "views/location_bar/brave_location_bar_view.h",
       "views/location_bar/brave_star_view.cc",

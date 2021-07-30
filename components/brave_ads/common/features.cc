@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "brave/components/brave_ads/browser/features.h"
+#include "brave/components/brave_ads/common/features.h"
 
 #include "base/feature_list.h"
 
@@ -12,6 +12,9 @@ namespace features {
 
 const base::Feature kAdNotifications{"AdNotifications",
                                      base::FEATURE_ENABLED_BY_DEFAULT};
+
+const base::Feature kRequestAdsEnabledApi{"RequestAdsEnabledApi",
+                                          base::FEATURE_ENABLED_BY_DEFAULT};
 
 namespace {
 
@@ -140,6 +143,10 @@ int AdNotificationInsetY() {
   return GetFieldTrialParamByFeatureAsInt(
       kAdNotifications, kFieldTrialParameterAdNotificationInsetY,
       kDefaultAdNotificationInsetY);
+}
+
+bool IsRequestAdsEnabledApiEnabled() {
+  return base::FeatureList::IsEnabled(kRequestAdsEnabledApi);
 }
 
 #endif  // !defined(OS_ANDROID)

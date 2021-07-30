@@ -5,7 +5,7 @@
 
 #include "brave/components/brave_ads/browser/notification_helper_linux.h"
 
-#include "brave/components/brave_ads/browser/features.h"
+#include "brave/components/brave_ads/common/features.h"
 
 namespace brave_ads {
 
