@@ -22,9 +22,7 @@ source_set("renderer") {
   ]
 
   if (brave_ads_enabled) {
-    deps += [
-      "//brave/components/brave_ads/renderer",
-    ]
+    deps += [ "//brave/components/brave_ads/renderer" ]
   }
 
   if (brave_wallet_enabled) {

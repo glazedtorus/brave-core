@@ -24,9 +24,8 @@ brave_chrome_renderer_public_deps = [
 ]
 
 if (brave_ads_enabled) {
-  brave_chrome_renderer_public_deps += [
-    "//brave/components/brave_ads/renderer",
-  ]
+  brave_chrome_renderer_public_deps +=
+      [ "//brave/components/brave_ads/renderer" ]
 }
 
 if (brave_wallet_enabled) {

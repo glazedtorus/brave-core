@@ -16,7 +16,5 @@ static_library("common") {
     "switches.h",
   ]
 
-  deps = [
-    "//base",
-  ]
+  deps = [ "//base" ]
 }

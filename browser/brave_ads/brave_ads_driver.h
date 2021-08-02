@@ -6,8 +6,6 @@
 #ifndef BRAVE_BROWSER_BRAVE_ADS_BRAVE_ADS_DRIVER_H_
 #define BRAVE_BROWSER_BRAVE_ADS_BRAVE_ADS_DRIVER_H_
 
-#include <string>
-
 #include "base/scoped_observation.h"
 #include "base/sequence_checker.h"
 #include "brave/components/brave_ads/common/brave_ads_driver.mojom.h"

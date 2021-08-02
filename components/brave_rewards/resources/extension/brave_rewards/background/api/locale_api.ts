@@ -24,6 +24,11 @@ export const getUIMessages = (): Record<string, string> => {
   const strings = [
     'addFunds',
     'and',
+    'adsEnableBraveRewardsDescription',
+    'adsEnableCanStartFreeCall',
+    'adsEnableClickAnywhereToBraveTalk',
+    'adsEnableTurnOnRewards',
+    'adsEnableTurnOnRewardsToStartCall',
     'backupNow',
     'backupWalletNotification',
     'backupWalletTitle',

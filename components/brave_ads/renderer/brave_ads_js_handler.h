@@ -22,7 +22,7 @@ namespace brave_ads {
 
 class BraveAdsJSHandler final {
  public:
-  BraveAdsJSHandler(content::RenderFrame* render_frame);
+  explicit BraveAdsJSHandler(content::RenderFrame* render_frame);
   BraveAdsJSHandler(const BraveAdsJSHandler&) = delete;
   BraveAdsJSHandler& operator=(const BraveAdsJSHandler&) = delete;
   ~BraveAdsJSHandler();

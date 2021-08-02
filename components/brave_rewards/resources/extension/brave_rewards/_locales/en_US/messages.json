@@ -798,5 +798,25 @@
         "content": "$2"
       }
     }
+  },
+  "adsEnableBraveRewardsDescription": {
+    "message": "With Brave Rewards, you earn tokens for viewing private ads (your data is safe). Turn those tokens into cash, gift cards…or even tip the websites you love. No tracking. No slow downs.",
+    "description": ""
+  },
+  "adsEnableCanStartFreeCall": {
+    "message": "You can now start a free call",
+    "description": ""
+  },
+  "adsEnableClickAnywhereToBraveTalk": {
+    "message": "Click anywhere on the screen to continue to Brave Talk.",
+    "description": ""
+  },
+  "adsEnableTurnOnRewards": {
+    "message": "Turn on Rewards",
+    "description": ""
+  },
+  "adsEnableTurnOnRewardsToStartCall": {
+    "message": "To start a free call, turn on Brave Rewards",
+    "description": ""
   }
 }
