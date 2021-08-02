@@ -260,16 +260,21 @@ void UpholdWallet::OnLinkWallet(const type::Result result,
   DCHECK(uphold_wallet->address.empty());
   DCHECK(!id.empty());
 
-  if (result == type::Result::ALREADY_EXISTS) {
+  if (result == type::Result::ALREADY_EXISTS ||
+      result == type::Result::TOO_MANY_RESULTS) {
     // Entering NOT_CONNECTED.
     ledger_->uphold()->DisconnectWallet(
-        ledger::notifications::kWalletDeviceLimitReached);
+        result == type::Result::ALREADY_EXISTS
+            ? ledger::notifications::kWalletDeviceLimitReached
+            : ledger::notifications::kWalletMismatchedProviderAccounts);
 
     ledger_->database()->SaveEventLog(
-        log::kDeviceLimitReached,
+        result == type::Result::ALREADY_EXISTS
+            ? log::kDeviceLimitReached
+            : log::kMismatchedProviderAccounts,
         constant::kWalletUphold + std::string("/") + id.substr(0, 5));
 
-    return callback(type::Result::ALREADY_EXISTS);
+    return callback(result);
   }
 
   if (result != type::Result::LEDGER_OK) {
