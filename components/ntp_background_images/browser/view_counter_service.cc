@@ -109,18 +109,20 @@ void ViewCounterService::BrandedWallpaperWillBeDisplayed(
 
 NTPBackgroundImagesData*
 ViewCounterService::GetCurrentBrandedWallpaperData() const {
-  LOG(WARNING) << "ViewCounterService::GetCurrentBrandedWallpaperData: 0";
+//   LOG(WARNING) << "ViewCounterService::GetCurrentBrandedWallpaperData: 0";
   auto* sr_data = service_->GetBackgroundImagesData(true /* for_sr */);
   if (sr_data && IsSuperReferralWallpaperOptedIn())
     return sr_data;
 
-  LOG(WARNING) << "ViewCounterService::GetCurrentBrandedWallpaperData: 2";
+//   LOG(WARNING) << "ViewCounterService::GetCurrentBrandedWallpaperData: 2";
   return service_->GetBackgroundImagesData(false);
 }
 
 base::Value ViewCounterService::GetCurrentWallpaperForDisplay() const {
-  LOG(WARNING) << "ViewCounterService::GetCurrentWallpaperForDisplay: ShouldShowBrandedWallpaper: " << ShouldShowBrandedWallpaper();
-  if (ShouldShowBrandedWallpaper()) {
+  LOG(WARNING) << "ViewCounterService::GetCurrentWallpaperForDisplay";
+  bool shouldShowBrandedWallpaper = ShouldShowBrandedWallpaper();
+  LOG(WARNING) << "ViewCounterService::GetCurrentWallpaperForDisplay: ShouldShowBrandedWallpaper: " << shouldShowBrandedWallpaper;
+  if (shouldShowBrandedWallpaper) {
     return GetCurrentWallpaper();
   }
 
@@ -236,9 +238,10 @@ void ViewCounterService::BrandedWallpaperLogoClicked(
 }
 
 bool ViewCounterService::ShouldShowBrandedWallpaper() const {
-  LOG(WARNING) << "ViewCounterService::ShouldShowBrandedWallpaper: IsBrandedWallpaperActive: " << IsBrandedWallpaperActive();
-  LOG(WARNING) << "ViewCounterService::ShouldShowBrandedWallpaper: ShouldShowBrandedWallpaper: " << model_.ShouldShowBrandedWallpaper();
-  return IsBrandedWallpaperActive() && model_.ShouldShowBrandedWallpaper();
+  bool isBrandedWallpaperActive = IsBrandedWallpaperActive();
+  bool shouldShowBrandedWallpaper = model_.ShouldShowBrandedWallpaper();
+  LOG(WARNING) << "ViewCounterService::ShouldShowBrandedWallpaper: IsBrandedWallpaperActive: " << isBrandedWallpaperActive << " ShouldShowBrandedWallpaper: " << shouldShowBrandedWallpaper;
+  return isBrandedWallpaperActive && shouldShowBrandedWallpaper;
 }
 
 void ViewCounterService::InitializeWebUIDataSource(
@@ -247,9 +250,10 @@ void ViewCounterService::InitializeWebUIDataSource(
 }
 
 bool ViewCounterService::IsBrandedWallpaperActive() const {
-  LOG(WARNING) << "ViewCounterService::IsBrandedWallpaperActive: !GetCurrentBrandedWallpaperData: " << (!GetCurrentBrandedWallpaperData());
-  if (!GetCurrentBrandedWallpaperData())
+  if (!GetCurrentBrandedWallpaperData()) {
+    LOG(WARNING) << "ViewCounterService::IsBrandedWallpaperActive: !GetCurrentBrandedWallpaperData";
     return false;
+  }
 
   // We show SR regardless of ntp background images option because SR works
   // like theme.

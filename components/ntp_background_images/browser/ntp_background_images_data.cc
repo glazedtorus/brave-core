@@ -248,8 +248,7 @@ bool NTPBackgroundImagesData::IsSuperReferral() const {
 }
 
 base::Value NTPBackgroundImagesData::GetBackgroundAt(size_t index) {
-  LOG(WARNING) << "NTPBackgroundImagesData::GetBackgroundAt: index: " << index;
-  LOG(WARNING) << "NTPBackgroundImagesData::GetBackgroundAt: IsValid: " << IsValid();
+  LOG(WARNING) << "NTPBackgroundImagesData::GetBackgroundAt: index: " << index << " IsValid: " << IsValid();
   DCHECK(index >= 0 && index < wallpaper_image_urls().size());
 
   base::Value data(base::Value::Type::DICTIONARY);

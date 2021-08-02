@@ -74,13 +74,13 @@ std::string HandleComponentData(const base::FilePath& installed_dir) {
   }
 
   bool success = base::ReadFileToString(json_path, &contents);
-  LOG(WARNING) << "HandleComponentData: installed_dir: " << installed_dir;
-  LOG(WARNING) << "HandleComponentData: PathExists(json_path): " << base::PathExists(json_path);
-  LOG(WARNING) << "HandleComponentData: PathExists(alex-plesovskich.avif): " << base::PathExists(installed_dir.AppendASCII("alex-plesovskich.avif"));
-  LOG(WARNING) << "HandleComponentData: PathExists(andre-benz.avif): " << base::PathExists(installed_dir.AppendASCII("andre-benz.avif"));
-  LOG(WARNING) << "HandleComponentData: PathExists(sora-sagano.avif): " << base::PathExists(installed_dir.AppendASCII("sora-sagano.avif"));
-  LOG(WARNING) << "HandleComponentData: success: " << success;
-  LOG(WARNING) << "HandleComponentData: contents.empty(): " << contents.empty();
+//   LOG(WARNING) << "HandleComponentData: installed_dir: " << installed_dir;
+//   LOG(WARNING) << "HandleComponentData: PathExists(json_path): " << base::PathExists(json_path);
+//   LOG(WARNING) << "HandleComponentData: PathExists(alex-plesovskich.avif): " << base::PathExists(installed_dir.AppendASCII("alex-plesovskich.avif"));
+//   LOG(WARNING) << "HandleComponentData: PathExists(andre-benz.avif): " << base::PathExists(installed_dir.AppendASCII("andre-benz.avif"));
+//   LOG(WARNING) << "HandleComponentData: PathExists(sora-sagano.avif): " << base::PathExists(installed_dir.AppendASCII("sora-sagano.avif"));
+//   LOG(WARNING) << "HandleComponentData: success: " << success;
+//   LOG(WARNING) << "HandleComponentData: contents.empty(): " << contents.empty();
   if (!success || contents.empty()) {
     DVLOG(2) << __func__ << ": cannot read json file " << json_path;
     return contents;
@@ -433,10 +433,10 @@ bool NTPBackgroundImagesService::HasObserver(Observer* observer) {
 
 NTPBackgroundImagesData*
 NTPBackgroundImagesService::GetBackgroundImagesData(bool super_referral) const {
-  LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: super_referral: " << super_referral;
+//   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: super_referral: " << super_referral;
   const bool is_sr_enabled =
       base::FeatureList::IsEnabled(features::kBraveNTPSuperReferralWallpaper);
-  LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: is_sr_enabled: " << is_sr_enabled;
+//   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: is_sr_enabled: " << is_sr_enabled;
   if (is_sr_enabled) {
     if (super_referral) {
       if (sr_images_data_ && sr_images_data_->IsValid())
@@ -462,9 +462,9 @@ NTPBackgroundImagesService::GetBackgroundImagesData(bool super_referral) const {
       return nullptr;
   }
 
-  LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_ != nullptr: " << (si_images_data_ != nullptr);
+//   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_ != nullptr: " << (si_images_data_ != nullptr);
   if (si_images_data_)
-    LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_->IsValid(): " << si_images_data_->IsValid();
+//     LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_->IsValid(): " << si_images_data_->IsValid();
   if (si_images_data_ && si_images_data_->IsValid())
     return si_images_data_.get();
 
@@ -475,11 +475,7 @@ void NTPBackgroundImagesService::OnComponentReady(
     bool is_super_referral,
     bool is_sponsored_image,
     const base::FilePath& installed_dir) {
-  LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: is_super_referral: " << is_super_referral;
-  LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: is_sponsored_image: " << is_sponsored_image;
-  LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: installed_dir: " << installed_dir;
-  if (!is_super_referral && !is_sponsored_image)
-      DCHECK(false);
+  LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: is_super_referral: " << is_super_referral << " is_sponsored_image: " << is_sponsored_image << " installed_dir: " << installed_dir;
   if (is_super_referral)
     sr_installed_dir_ = installed_dir;
   else
@@ -499,9 +495,7 @@ void NTPBackgroundImagesService::OnGetComponentJsonData(
     bool is_super_referral,
     bool is_sponsored_image,
     const std::string& json_string) {
-  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: is_super_referral: " << is_super_referral;
-  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: is_sponsored_image: " << is_sponsored_image;
-  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: json_string: " << json_string;
+  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: is_super_referral: " << is_super_referral<< " is_sponsored_image: " << is_sponsored_image << " json_string: " << json_string;
   if (is_super_referral) {
     local_pref_->SetBoolean(
           prefs::kNewTabPageGetInitialSRComponentInProgress,
