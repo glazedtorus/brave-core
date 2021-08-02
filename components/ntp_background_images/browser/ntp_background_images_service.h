@@ -34,7 +34,7 @@ class NTPBackgroundImagesService {
   class Observer {
    public:
     // Called whenever ntp background images component is updated.
-    virtual void OnUpdated(NTPBackgroundImagesData* data) = 0;
+    virtual void OnUpdated(NTPBackgroundImagesData* data, bool sponsered) = 0;
     // Called when SR campaign ended.
     virtual void OnSuperReferralEnded() = 0;
    protected:
@@ -58,7 +58,7 @@ class NTPBackgroundImagesService {
   void RemoveObserver(Observer* observer);
   bool HasObserver(Observer* observer);
 
-  NTPBackgroundImagesData* GetBackgroundImagesData(bool super_referral) const;
+  NTPBackgroundImagesData* GetBackgroundImagesData(bool super_referral, bool sponsered) const;
 
   bool test_data_used() const { return test_data_used_; }
 
@@ -137,9 +137,11 @@ class NTPBackgroundImagesService {
   bool test_data_used_ = false;
   component_updater::ComponentUpdateService* component_update_service_;
   PrefService* local_pref_;
+  base::FilePath bi_installed_dir_;
   base::FilePath si_installed_dir_;
   base::FilePath sr_installed_dir_;
   base::ObserverList<Observer>::Unchecked observer_list_;
+  std::unique_ptr<NTPBackgroundImagesData> bi_images_data_;
   std::unique_ptr<NTPBackgroundImagesData> si_images_data_;
   std::unique_ptr<NTPBackgroundImagesData> sr_images_data_;
   PrefChangeRegistrar pref_change_registrar_;

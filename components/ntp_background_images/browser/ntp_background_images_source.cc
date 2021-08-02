@@ -36,6 +36,10 @@ bool IsSuperReferralPath(const std::string& path) {
   return path.rfind(kSuperReferralPath, 0) == 0;
 }
 
+bool IsSponsoredImagesPath(const std::string& path) {
+  return path.rfind(kSponsoredImagesPath, 0) == 0;
+}
+
 }  // namespace
 
 NTPBackgroundImagesSource::NTPBackgroundImagesSource(
@@ -70,7 +74,7 @@ void NTPBackgroundImagesSource::StartDataRequest(
   }
 
   auto* images_data =
-      service_->GetBackgroundImagesData(IsSuperReferralPath(path));
+      service_->GetBackgroundImagesData(IsSuperReferralPath(path), IsSponsoredImagesPath(path));
   if (!images_data) {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE, base::BindOnce(std::move(callback),
@@ -164,7 +168,7 @@ bool NTPBackgroundImagesSource::IsLogoPath(const std::string& path) const {
 int NTPBackgroundImagesSource::GetLogoIndexFromPath(
     const std::string& path) const {
   const bool is_super_referral_path = IsSuperReferralPath(path);
-  auto* images_data = service_->GetBackgroundImagesData(is_super_referral_path);
+  auto* images_data = service_->GetBackgroundImagesData(is_super_referral_path, true);
   if (!images_data)
     return -1;
 
@@ -185,7 +189,8 @@ int NTPBackgroundImagesSource::GetLogoIndexFromPath(
 int NTPBackgroundImagesSource::GetWallpaperIndexFromPath(
     const std::string& path) const {
   const bool is_super_referral_path = IsSuperReferralPath(path);
-  auto* images_data = service_->GetBackgroundImagesData(is_super_referral_path);
+  const bool is_sponsered_images_path = IsSponsoredImagesPath(path);
+  auto* images_data = service_->GetBackgroundImagesData(is_super_referral_path, is_sponsered_images_path);
   if (!images_data)
     return -1;
 

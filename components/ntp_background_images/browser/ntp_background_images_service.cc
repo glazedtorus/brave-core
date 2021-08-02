@@ -225,7 +225,7 @@ void NTPBackgroundImagesService::CheckSuperReferralComponent() {
     if (!cached_data.empty()) {
       DVLOG(2) << __func__ << ": Initialized SR Data from cache.";
       sr_images_data_.reset(
-          new NTPBackgroundImagesData(cached_data, si_installed_dir_, true));
+          new NTPBackgroundImagesData(cached_data, sr_installed_dir_, true));
     }
     return;
   }
@@ -432,7 +432,7 @@ bool NTPBackgroundImagesService::HasObserver(Observer* observer) {
 }
 
 NTPBackgroundImagesData*
-NTPBackgroundImagesService::GetBackgroundImagesData(bool super_referral) const {
+NTPBackgroundImagesService::GetBackgroundImagesData(bool super_referral, bool sponsered) const {
 //   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: super_referral: " << super_referral;
   const bool is_sr_enabled =
       base::FeatureList::IsEnabled(features::kBraveNTPSuperReferralWallpaper);
@@ -462,11 +462,14 @@ NTPBackgroundImagesService::GetBackgroundImagesData(bool super_referral) const {
       return nullptr;
   }
 
-//   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_ != nullptr: " << (si_images_data_ != nullptr);
-  if (si_images_data_)
-//     LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: si_images_data_->IsValid(): " << si_images_data_->IsValid();
-  if (si_images_data_ && si_images_data_->IsValid())
+//   LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: sponsered: " << sponsered << " si_images_data_ != nullptr: " << (si_images_data_ != nullptr) << " bi_images_data_ != nullptr: " << (bi_images_data_ != nullptr);
+  if (sponsered && si_images_data_ && si_images_data_->IsValid()) {
+//     LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: sponsered: " << sponsered << " si_images_data_ != nullptr: " << (si_images_data_ != nullptr) << " si_images_data_->IsValid(): " << si_images_data_->IsValid();
     return si_images_data_.get();
+  } else if (!sponsered && bi_images_data_ && bi_images_data_->IsValid()) {
+//     LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: sponsered: " << sponsered << " bi_images_data_ != nullptr: " << (bi_images_data_ != nullptr) << " bi_images_data_->IsValid(): " << bi_images_data_->IsValid();
+    return bi_images_data_.get();
+  }
 
   return nullptr;
 }
@@ -478,11 +481,14 @@ void NTPBackgroundImagesService::OnComponentReady(
   LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: is_super_referral: " << is_super_referral << " is_sponsored_image: " << is_sponsored_image << " installed_dir: " << installed_dir;
   if (is_super_referral)
     sr_installed_dir_ = installed_dir;
-  else
+  else if (is_sponsored_image)
     si_installed_dir_ = installed_dir;
+  else
+    bi_installed_dir_ = installed_dir;
 
   DVLOG(2) << __func__ << (is_super_referral ? ": NPT SR Component is ready"
-                                             : ": NTP SI/BI Component is ready");
+                                             : (is_sponsored_image) ? ": NTP SI Component is ready"
+                                              : ": NTP BI Component is ready");
 
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock()},
@@ -495,7 +501,6 @@ void NTPBackgroundImagesService::OnGetComponentJsonData(
     bool is_super_referral,
     bool is_sponsored_image,
     const std::string& json_string) {
-  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: is_super_referral: " << is_super_referral<< " is_sponsored_image: " << is_sponsored_image << " json_string: " << json_string;
   if (is_super_referral) {
     local_pref_->SetBoolean(
           prefs::kNewTabPageGetInitialSRComponentInProgress,
@@ -511,9 +516,13 @@ void NTPBackgroundImagesService::OnGetComponentJsonData(
     CacheTopSitesFaviconList();
     local_pref_->SetString(prefs::kNewTabPageCachedSuperReferralComponentData,
                            json_string);
-  } else {
+  } else if (is_sponsored_image) {
     si_images_data_.reset(new NTPBackgroundImagesData(json_string,
                                                       si_installed_dir_,
+                                                      is_sponsored_image));
+  } else {
+    bi_images_data_.reset(new NTPBackgroundImagesData(json_string,
+                                                      bi_installed_dir_,
                                                       is_sponsored_image));
   }
 
@@ -524,9 +533,11 @@ void NTPBackgroundImagesService::OnGetComponentJsonData(
     return;
   }
 
+  LOG(WARNING) << "NTPBackgroundImagesService::OnGetComponentJsonData: is_super_referral: " << is_super_referral << " is_sponsored_image: " << is_sponsored_image << " is_super_referral ? 0 : is_sponsored_image ? 1 : 2: " << (is_super_referral ? 0 : is_sponsored_image ? 1 : 2);
   for (auto& observer : observer_list_) {
     observer.OnUpdated(is_super_referral ? sr_images_data_.get()
-                                         : si_images_data_.get());
+                                         : is_sponsored_image ? si_images_data_.get()
+                                          : bi_images_data_.get(), is_sponsored_image);
   }
 }
 

@@ -235,9 +235,9 @@ NTPBackgroundImagesBridge::GetCurrentWallpaper(
   return CreateWallpaper();
 }
 
-void NTPBackgroundImagesBridge::OnUpdated(NTPBackgroundImagesData* data) {
+void NTPBackgroundImagesBridge::OnUpdated(NTPBackgroundImagesData* data, bool sponsered) {
   // Don't have interest about in-effective component data update.
-  if (data != view_counter_service_->GetCurrentBrandedWallpaperData())
+  if (data != view_counter_service_->GetCurrentBrandedWallpaperData(sponsered))
     return;
 
   JNIEnv* env = AttachCurrentThread();

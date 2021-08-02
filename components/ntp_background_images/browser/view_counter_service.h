@@ -60,7 +60,7 @@ class ViewCounterService : public KeyedService,
                                    const std::string& wallpaper_id);
 
   base::Value GetCurrentWallpaperForDisplay() const;
-  base::Value GetCurrentWallpaper() const;
+  base::Value GetCurrentWallpaper(bool sponsered) const;
   std::vector<TopSite> GetTopSitesVectorForWebUI() const;
   std::vector<TopSite> GetTopSitesVectorData() const;
 
@@ -73,7 +73,7 @@ class ViewCounterService : public KeyedService,
   // Gets the current data for branded wallpaper, if there
   // is a wallpaper active. Does not consider user opt-in
   // status, or consider whether the wallpaper should be shown.
-  NTPBackgroundImagesData* GetCurrentBrandedWallpaperData() const;
+  NTPBackgroundImagesData* GetCurrentBrandedWallpaperData(bool sponsered) const;
 
   void InitializeWebUIDataSource(content::WebUIDataSource* html_source);
 
@@ -105,7 +105,7 @@ class ViewCounterService : public KeyedService,
   void Shutdown() override;
 
   // NTPBackgroundImagesService::Observer
-  void OnUpdated(NTPBackgroundImagesData* data) override;
+  void OnUpdated(NTPBackgroundImagesData* data, bool sponsered) override;
   void OnSuperReferralEnded() override;
 
   void ResetNotificationState();
