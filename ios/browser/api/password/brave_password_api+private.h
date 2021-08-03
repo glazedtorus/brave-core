@@ -18,7 +18,7 @@ class PasswordStore;
 }
 
 @interface BravePasswordAPI (Private)
-- (instancetype)initWithBrowserState(scoped_refptr<password_manager::PasswordStore>)passwordStore;
+- (instancetype)initWithPasswordStore:(scoped_refptr<password_manager::PasswordStore>)passwordStore;
 @end
 
 NS_ASSUME_NONNULL_END

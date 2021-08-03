@@ -16,8 +16,6 @@
 #include "components/password_manager/core/browser/password_store.h"
 #include "components/password_manager/core/browser/password_store_consumer.h"
 
-#include "ios/chrome/browser/passwords/ios_chrome_password_store_factory.h"
-
 #include "ios/web/public/thread/web_thread.h"
 #include "net/base/mac/url_conversions.h"
 #include "ui/base/page_transition_types.h"
@@ -201,17 +199,11 @@ class PasswordStoreConsumerHelper
 
 @implementation BravePasswordAPI
 
-- (instancetype)initWithBrowserState:(scoped_refptr<password_manager::PasswordStore>)passwordStore {
+- (instancetype)initWithPasswordStore:(scoped_refptr<password_manager::PasswordStore>)passwordStore {
   if ((self = [super init])) {
     DCHECK_CURRENTLY_ON(web::WebThread::UI);
 
     password_store_ = passwordStore;
-
-    // password_store_ = IOSChromePasswordStoreFactory::GetForBrowserState(
-    //   browserState),
-    //   ServiceAccessType::EXPLICIT_ACCESS)
-    //     .get();
-
   }
   return self;
 }
