@@ -153,9 +153,6 @@ void NTPBackgroundImagesService::RegisterBackgroundImagesComponent() {
   const auto& data = GetBackgroundImagesComponentData();
 
   DVLOG(2) << __func__ << ": Start NTP BI component";
-  LOG(WARNING) << "NTPBackgroundImagesService::RegisterBackgroundImagesComponent" << ": Start NTP BI component";
-  LOG(WARNING) << "NTPBackgroundImagesService::RegisterBackgroundImagesComponent: data->component_base64_public_key" << data->component_base64_public_key;
-  LOG(WARNING) << "NTPBackgroundImagesService::RegisterBackgroundImagesComponent: data->component_id" << data->component_id;
   RegisterNTPBackgroundImagesComponent(
       component_update_service_,
       data->component_base64_public_key,
@@ -166,7 +163,6 @@ void NTPBackgroundImagesService::RegisterBackgroundImagesComponent() {
 }
 
 void NTPBackgroundImagesService::RegisterSponsoredImagesComponent() {
-  LOG(WARNING) << "NTPBackgroundImagesService::RegisterSponsoredImagesComponent" << ": Start NTP SI component";
   const std::string locale =
       brave_l10n::LocaleHelper::GetInstance()->GetLocale();
   const auto& data = GetSponsoredImagesComponentData(
@@ -440,9 +436,6 @@ NTPBackgroundImagesService::GetBrandedImagesData(bool super_referral) const {
     if (local_pref_->FindPreference(
           prefs::kNewTabPageCachedSuperReferralComponentInfo)->
               IsDefaultValue()) {
-      LOG(WARNING) << "NTPBackgroundImagesService::GetBackgroundImagesData: kNewTabPageCachedSuperReferralComponentInfo->IsDefaultValue: " << (local_pref_->FindPreference(
-          prefs::kNewTabPageCachedSuperReferralComponentInfo)->
-              IsDefaultValue());
       return nullptr;
     }
   } else {
@@ -458,7 +451,6 @@ NTPBackgroundImagesService::GetBrandedImagesData(bool super_referral) const {
 
 void NTPBackgroundImagesService::OnComponentReady(
     const base::FilePath& installed_dir) {
-  LOG(WARNING) << "NTPBackgroundImagesService::OnComponentReady: installed_dir: " << installed_dir;
   bi_installed_dir_ = installed_dir;
 
   DVLOG(2) << __func__ << ": NTP BI Component is ready";
@@ -473,7 +465,6 @@ void NTPBackgroundImagesService::OnComponentReady(
 void NTPBackgroundImagesService::OnSponsoredComponentReady(
     bool is_super_referral,
     const base::FilePath& installed_dir) {
-  LOG(WARNING) << "NTPBackgroundImagesService::OnSponsoredComponentReady: is_super_referral: " << is_super_referral << " installed_dir: " << installed_dir;
   if (is_super_referral)
     sr_installed_dir_ = installed_dir;
   else

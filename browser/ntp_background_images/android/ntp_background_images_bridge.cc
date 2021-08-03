@@ -133,17 +133,14 @@ base::android::ScopedJavaLocalRef<jobject>
 NTPBackgroundImagesBridge::CreateWallpaper() {
   JNIEnv* env = AttachCurrentThread();
 
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper";
   auto data = view_counter_service_
       ? view_counter_service_->GetCurrentWallpaperForDisplay()
       : base::Value();
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: data.is_none(): " << data.is_none();
   if (data.is_none())
     return base::android::ScopedJavaLocalRef<jobject>();
 
   const std::string wallpaper_id = base::GenerateGUID();
   view_counter_service_->BrandedWallpaperWillBeDisplayed(wallpaper_id);
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: wallpaper_id: " << wallpaper_id;
 
   auto* image_path =
       data.FindStringKey(ntp_background_images::kWallpaperImagePathKey);
@@ -153,8 +150,6 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
       data.FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
   auto* logo_image_path =
       data.FindStringPath(ntp_background_images::kLogoImagePath);
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: image_path: " << (*image_path);
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: !logo_image_path: " << (!logo_image_path);
   // logo_image_path only exists in sponsored images
   if (!image_path || (!is_background && !logo_image_path))
     return base::android::ScopedJavaLocalRef<jobject>();
@@ -170,8 +165,6 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
       ntp_background_images::kIsSponsoredKey).value_or(false);
   auto* author = data.FindStringKey(ntp_background_images::kImageAuthorKey);
   auto* link = data.FindStringKey(ntp_background_images::kImageLinkKey);
-
-  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: 3";
 
   return Java_NTPBackgroundImagesBridge_createWallpaper(
       env,

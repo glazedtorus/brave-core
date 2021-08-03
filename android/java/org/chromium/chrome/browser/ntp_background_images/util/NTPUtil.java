@@ -301,11 +301,8 @@ public class NTPUtil {
             InputStream inputStream = null;
             try {
                 Uri imageFileUri = Uri.parse("file://" + mWallpaper.getImagePath());
-                Log.w("NTPUtil", "getWallpaperBitmap: imageFileUri: " + imageFileUri.toString());
                 inputStream = mContext.getContentResolver().openInputStream(imageFileUri);
-                Log.w("NTPUtil", "getWallpaperBitmap: inputStream: " + String.valueOf(inputStream.available()));
                 imageBitmap = BitmapFactory.decodeStream(inputStream, null, options);
-                Log.w("NTPUtil", "getWallpaperBitmap: imageBitmap: " + String.valueOf(imageBitmap == null));
                 inputStream.close();
             } catch (IOException exc) {
                 Log.e("NTP", exc.getMessage());

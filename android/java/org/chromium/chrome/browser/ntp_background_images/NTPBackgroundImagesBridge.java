@@ -7,7 +7,6 @@ package org.chromium.chrome.browser.ntp_background_images;
 
 import androidx.annotation.Nullable;
 
-import org.chromium.base.Log;
 import org.chromium.base.ObserverList;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.annotations.CalledByNative;
@@ -68,8 +67,6 @@ public class NTPBackgroundImagesBridge {
     }
 
     static public boolean enableSponsoredImages() {
-        Log.w("NTPBackgroundImagesBridge::enableSponsoredImages", "BraveFeatureList.BRAVE_REWARDS: " + String.valueOf(ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_REWARDS)));
-        Log.w("NTPBackgroundImagesBridge::enableSponsoredImages", "getSafetynetCheckFailed: " + String.valueOf(BravePrefServiceBridge.getInstance().getSafetynetCheckFailed()));
         return ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_REWARDS)
         && !BravePrefServiceBridge.getInstance().getSafetynetCheckFailed();
     }
@@ -81,7 +78,6 @@ public class NTPBackgroundImagesBridge {
     @Nullable
     public Wallpaper getCurrentWallpaper() {
         ThreadUtils.assertOnUiThread();
-        Log.w("NTPBackgroundImagesBridge::getCurrentWallpaper", "enableSponsoredImages: " + String.valueOf(enableSponsoredImages()));
         if (enableSponsoredImages()) {
             return NTPBackgroundImagesBridgeJni.get().getCurrentWallpaper(
                 mNativeNTPBackgroundImagesBridge, NTPBackgroundImagesBridge.this);
@@ -150,15 +146,6 @@ public class NTPBackgroundImagesBridge {
             boolean isBackground, String creativeInstanceId,
             String author, String link,
             String wallpaperId) {
-        Log.w("NTPBackgroundImagesBridge", "imagePath: " + imagePath);
-        Log.w("NTPBackgroundImagesBridge", "logoPath: " + logoPath);
-        Log.w("NTPBackgroundImagesBridge", "logoDestinationUrl: " + logoDestinationUrl);
-        Log.w("NTPBackgroundImagesBridge", "isSponsored: " + String.valueOf(isSponsored));
-        Log.w("NTPBackgroundImagesBridge", "isBackground: " + String.valueOf(isBackground));
-        Log.w("NTPBackgroundImagesBridge", "creativeInstanceId: " + creativeInstanceId);
-        Log.w("NTPBackgroundImagesBridge", "author: " + author);
-        Log.w("NTPBackgroundImagesBridge", "link: " + link);
-        Log.w("NTPBackgroundImagesBridge", "wallpaperId: " + wallpaperId);
         return new Wallpaper(imagePath, focalPointX, focalPointY,
                              logoPath, logoDestinationUrl,
                              themeName, isSponsored,
