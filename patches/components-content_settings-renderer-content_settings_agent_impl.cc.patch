@@ -1,8 +1,8 @@
 diff --git a/components/content_settings/renderer/content_settings_agent_impl.cc b/components/content_settings/renderer/content_settings_agent_impl.cc
-index 610f6d942998cbb69933c47d59fff172460a433c..d0d2c137373535d2148d00f9f08d9e4a67925cbe 100644
+index 9e11ffacf70818aff1b794b5df753457b9871581..0f208035e6a7ee413bce487c82bfac4ca02df581 100644
 --- a/components/content_settings/renderer/content_settings_agent_impl.cc
 +++ b/components/content_settings/renderer/content_settings_agent_impl.cc
-@@ -459,6 +459,7 @@ bool ContentSettingsAgentImpl::IsAllowlistedForContentSettings() const {
+@@ -458,6 +458,7 @@ bool ContentSettingsAgentImpl::IsAllowlistedForContentSettings() const {
    const WebDocument& document = render_frame()->GetWebFrame()->GetDocument();
    WebSecurityOrigin origin = document.GetSecurityOrigin();
    WebURL document_url = document.Url();
