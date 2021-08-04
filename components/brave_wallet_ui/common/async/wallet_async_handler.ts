@@ -6,7 +6,7 @@
 import { MiddlewareAPI, Dispatch, AnyAction } from 'redux'
 import AsyncActionHandler from '../../../common/AsyncActionHandler'
 import * as WalletActions from '../actions/wallet_actions'
-import { UnlockWalletPayloadType, SetInitialAccountNamesPayloadType, AddNewAccountNamePayloadType, ChainChangedEventPayloadType } from '../constants/action_types'
+import { UnlockWalletPayloadType, ChainChangedEventPayloadType } from '../constants/action_types'
 import { AppObjectType, APIProxyControllers, Network } from '../../constants/types'
 
 type Store = MiddlewareAPI<Dispatch<AnyAction>, any>
@@ -85,16 +85,6 @@ handler.on(WalletActions.removeFavoriteApp.getType(), async (store, appItem: App
   const walletHandler = (await getAPIProxy()).walletHandler
   await walletHandler.removeFavoriteApp(appItem)
   await refreshWalletInfo(store)
-})
-
-handler.on(WalletActions.setInitialAccountNames.getType(), async (store, payload: SetInitialAccountNamesPayloadType) => {
-  const keyringController = (await getAPIProxy()).keyringController
-  await keyringController.setInitialAccountNames(payload.accountNames)
-})
-
-handler.on(WalletActions.addNewAccountName.getType(), async (store, payload: AddNewAccountNamePayloadType) => {
-  const keyringController = (await getAPIProxy()).keyringController
-  await keyringController.addNewAccountName(payload.accountName)
 })
 
 handler.on(WalletActions.selectNetwork.getType(), async (store, payload: Network) => {
