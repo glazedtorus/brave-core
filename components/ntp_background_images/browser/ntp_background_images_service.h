@@ -28,13 +28,15 @@ class PrefService;
 namespace ntp_background_images {
 
 struct NTPBackgroundImagesData;
+struct NTPSponsoredImagesData;
 
 class NTPBackgroundImagesService {
  public:
   class Observer {
    public:
     // Called whenever ntp background images component is updated.
-    virtual void OnUpdated(NTPBackgroundImagesData* data, bool sponsered) = 0;
+    virtual void OnUpdated(NTPBackgroundImagesData* data) = 0;
+    virtual void OnUpdated(NTPSponsoredImagesData* data) = 0;
     // Called when SR campaign ended.
     virtual void OnSuperReferralEnded() = 0;
    protected:
@@ -58,7 +60,8 @@ class NTPBackgroundImagesService {
   void RemoveObserver(Observer* observer);
   bool HasObserver(Observer* observer);
 
-  NTPBackgroundImagesData* GetBackgroundImagesData(bool super_referral, bool sponsered) const;
+  NTPBackgroundImagesData* GetBackgroundImagesData() const;
+  NTPSponsoredImagesData* GetBrandedImagesData(bool super_referral) const;
 
   bool test_data_used() const { return test_data_used_; }
 
@@ -107,10 +110,10 @@ class NTPBackgroundImagesService {
   FRIEND_TEST_ALL_PREFIXES(NTPBackgroundImagesSourceTest,
                            BasicSuperReferralDataTest);
 
-  void OnComponentReady(bool is_super_referral, bool is_sponsored_image,
-                        const base::FilePath& installed_dir);
-  void OnGetComponentJsonData(bool is_super_referral, bool is_sponsored_image,
-                              const std::string& json_string);
+  void OnComponentReady(const base::FilePath& installed_dir);
+  void OnSponsoredComponentReady(bool is_super_referral, const base::FilePath& installed_dir);
+  void OnGetComponentJsonData(const std::string& json_string);
+  void OnGetSponsoredComponentJsonData(bool is_super_referral, const std::string& json_string);
   void OnMappingTableComponentReady(const base::FilePath& installed_dir);
   void OnPreferenceChanged(const std::string& pref_name);
   void OnGetMappingTableData(const std::string& json_string);
@@ -142,8 +145,8 @@ class NTPBackgroundImagesService {
   base::FilePath sr_installed_dir_;
   base::ObserverList<Observer>::Unchecked observer_list_;
   std::unique_ptr<NTPBackgroundImagesData> bi_images_data_;
-  std::unique_ptr<NTPBackgroundImagesData> si_images_data_;
-  std::unique_ptr<NTPBackgroundImagesData> sr_images_data_;
+  std::unique_ptr<NTPSponsoredImagesData> si_images_data_;
+  std::unique_ptr<NTPSponsoredImagesData> sr_images_data_;
   PrefChangeRegistrar pref_change_registrar_;
   // This is only used for registration during initial(first) SR component
   // download. After initial download is done, it's cached to

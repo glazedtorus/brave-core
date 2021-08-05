@@ -22,11 +22,13 @@ class Profile;
 
 namespace ntp_background_images {
 struct NTPBackgroundImagesData;
+struct NTPSponsoredImagesData;
 class ViewCounterService;
 }
 
 using ntp_background_images::NTPBackgroundImagesData;
 using ntp_background_images::NTPBackgroundImagesService;
+using ntp_background_images::NTPSponsoredImagesData;
 using ntp_background_images::ViewCounterService;
 
 class NTPBackgroundImagesBridge : public NTPBackgroundImagesService::Observer,
@@ -60,7 +62,8 @@ class NTPBackgroundImagesBridge : public NTPBackgroundImagesService::Observer,
   base::android::ScopedJavaLocalRef<jobject> GetJavaObject();
 
  private:
-  void OnUpdated(NTPBackgroundImagesData* data, bool sponsered) override;
+  void OnUpdated(NTPBackgroundImagesData* data) override;
+  void OnUpdated(NTPSponsoredImagesData* data) override;
   void OnSuperReferralEnded() override;
 
   base::android::ScopedJavaLocalRef<jobject> CreateWallpaper();

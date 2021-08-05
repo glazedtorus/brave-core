@@ -24,6 +24,7 @@
 #include "brave/components/brave_referrals/browser/brave_referrals_service.h"
 #include "brave/components/brave_stats/browser/brave_stats_updater_util.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_data.h"
+#include "brave/components/ntp_background_images/browser/ntp_sponsored_images_data.h"
 #include "brave/components/ntp_background_images/browser/url_constants.h"
 #include "brave/components/ntp_background_images/browser/view_counter_service.h"
 #include "chrome/browser/profiles/profile.h"
@@ -146,9 +147,14 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
 
   auto* image_path =
       data.FindStringKey(ntp_background_images::kWallpaperImagePathKey);
+  auto* creative_instance_id =
+      data.FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
   auto* logo_image_path =
       data.FindStringPath(ntp_background_images::kLogoImagePath);
-  if (!image_path || !logo_image_path)
+  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: image_path: " << (*image_path);
+  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: !logo_image_path: " << (!logo_image_path);
+  // creative_instance_id and logo_image_path only exists in sponsored images
+  if (!image_path || (creative_instance_id && !logo_image_path))
     return base::android::ScopedJavaLocalRef<jobject>();
 
   auto focal_point_x = data.FindIntKey(
@@ -160,21 +166,25 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
   auto* theme_name = data.FindStringKey(ntp_background_images::kThemeNameKey);
   auto is_sponsored = data.FindBoolKey(
       ntp_background_images::kIsSponsoredKey).value_or(false);
-  auto* creative_instance_id =
-      data.FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
+  auto* author = data.FindStringKey(ntp_background_images::kImageAuthorKey);
+  auto* link = data.FindStringKey(ntp_background_images::kImageLinkKey);
+
+  LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: 3";
 
   return Java_NTPBackgroundImagesBridge_createWallpaper(
       env,
       ConvertUTF8ToJavaString(env, *image_path),
       focal_point_x,
       focal_point_y,
-      ConvertUTF8ToJavaString(env, *logo_image_path),
+      ConvertUTF8ToJavaString(env, logo_image_path ? *logo_image_path : ""),
       ConvertUTF8ToJavaString(env, logo_destination_url ? *logo_destination_url
                                                         : ""),
-      ConvertUTF8ToJavaString(env, *theme_name),
+      ConvertUTF8ToJavaString(env, theme_name ? *theme_name : ""),
       is_sponsored,
       ConvertUTF8ToJavaString(env, creative_instance_id ? *creative_instance_id
                                                         : ""),
+      ConvertUTF8ToJavaString(env, author ? *author : ""),
+      ConvertUTF8ToJavaString(env, link ? *link : ""),
       ConvertUTF8ToJavaString(env, wallpaper_id));
 }
 
@@ -235,9 +245,18 @@ NTPBackgroundImagesBridge::GetCurrentWallpaper(
   return CreateWallpaper();
 }
 
-void NTPBackgroundImagesBridge::OnUpdated(NTPBackgroundImagesData* data, bool sponsered) {
+void NTPBackgroundImagesBridge::OnUpdated(NTPBackgroundImagesData* data) {
   // Don't have interest about in-effective component data update.
-  if (data != view_counter_service_->GetCurrentBrandedWallpaperData(sponsered))
+  if (data != view_counter_service_->GetCurrentWallpaperData())
+    return;
+
+  JNIEnv* env = AttachCurrentThread();
+  Java_NTPBackgroundImagesBridge_onUpdated(env, java_object_);
+}
+
+void NTPBackgroundImagesBridge::OnUpdated(NTPSponsoredImagesData* data) {
+  // Don't have interest about in-effective component data update.
+  if (data != view_counter_service_->GetCurrentBrandedWallpaperData())
     return;
 
   JNIEnv* env = AttachCurrentThread();

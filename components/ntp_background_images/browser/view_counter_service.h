@@ -32,6 +32,7 @@ class WeeklyStorage;
 namespace ntp_background_images {
 
 struct NTPBackgroundImagesData;
+struct NTPSponsoredImagesData;
 struct TopSite;
 
 class ViewCounterService : public KeyedService,
@@ -60,7 +61,8 @@ class ViewCounterService : public KeyedService,
                                    const std::string& wallpaper_id);
 
   base::Value GetCurrentWallpaperForDisplay() const;
-  base::Value GetCurrentWallpaper(bool sponsered) const;
+  base::Value GetCurrentWallpaper() const;
+  base::Value GetCurrentBrandedWallpaper() const;
   std::vector<TopSite> GetTopSitesVectorForWebUI() const;
   std::vector<TopSite> GetTopSitesVectorData() const;
 
@@ -70,10 +72,11 @@ class ViewCounterService : public KeyedService,
 
   void BrandedWallpaperWillBeDisplayed(const std::string& wallpaper_id);
 
+  NTPBackgroundImagesData* GetCurrentWallpaperData() const;
   // Gets the current data for branded wallpaper, if there
   // is a wallpaper active. Does not consider user opt-in
   // status, or consider whether the wallpaper should be shown.
-  NTPBackgroundImagesData* GetCurrentBrandedWallpaperData(bool sponsered) const;
+  NTPSponsoredImagesData* GetCurrentBrandedWallpaperData() const;
 
   void InitializeWebUIDataSource(content::WebUIDataSource* html_source);
 
@@ -105,7 +108,8 @@ class ViewCounterService : public KeyedService,
   void Shutdown() override;
 
   // NTPBackgroundImagesService::Observer
-  void OnUpdated(NTPBackgroundImagesData* data, bool sponsered) override;
+  void OnUpdated(NTPBackgroundImagesData* data) override;
+  void OnUpdated(NTPSponsoredImagesData* data) override;
   void OnSuperReferralEnded() override;
 
   void ResetNotificationState();

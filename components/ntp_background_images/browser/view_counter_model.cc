@@ -26,17 +26,16 @@ bool ViewCounterModel::ShouldShowBrandedWallpaper() const {
 
 void ViewCounterModel::ResetCurrentWallpaperImageIndex() {
   current_wallpaper_image_index_ = 0;
-  current_background_wallpaper_image_index_ = 0;
+  current_branded_wallpaper_image_index_ = 0;
 }
 
 void ViewCounterModel::RegisterPageView() {
   DCHECK_NE(-1, total_image_count_);
-//   DCHECK_NE(-1, total_background_image_count_);
 
   LOG(WARNING) << "ViewCounterModel::RegisterPageView: ignore_count_to_branded_wallpaper_: " << ignore_count_to_branded_wallpaper_;
   if (ignore_count_to_branded_wallpaper_) {
-    current_wallpaper_image_index_++;
-    current_wallpaper_image_index_ %= total_image_count_;
+    current_branded_wallpaper_image_index_++;
+    current_branded_wallpaper_image_index_ %= total_branded_image_count_;
     return;
   }
 
@@ -49,14 +48,14 @@ void ViewCounterModel::RegisterPageView() {
   if (count_to_branded_wallpaper_ < 0) {
     // Reset count and increse image index for next time.
     count_to_branded_wallpaper_ = kRegularCountToBrandedWallpaper;
-    LOG(WARNING) << "ViewCounterModel::RegisterPageView: count_to_branded_wallpaper_: " << count_to_branded_wallpaper_ << " current_wallpaper_image_index_: " << current_wallpaper_image_index_ << " current_background_wallpaper_image_index_: " << current_background_wallpaper_image_index_;
-    current_wallpaper_image_index_++;
-    current_wallpaper_image_index_ %= total_image_count_;
+    LOG(WARNING) << "ViewCounterModel::RegisterPageView: count_to_branded_wallpaper_: " << count_to_branded_wallpaper_ << " current_wallpaper_image_index_: " << current_branded_wallpaper_image_index_ << " current_branded_wallpaper_image_index_: " << current_branded_wallpaper_image_index_;
+    current_branded_wallpaper_image_index_++;
+    current_branded_wallpaper_image_index_ %= total_branded_image_count_;
   } else {
     // Increase background image index
-    LOG(WARNING) << "ViewCounterModel::RegisterPageView: count_to_branded_wallpaper_: " << count_to_branded_wallpaper_ << " current_wallpaper_image_index_: " << current_wallpaper_image_index_ << " current_background_wallpaper_image_index_: " << current_background_wallpaper_image_index_;
-    current_background_wallpaper_image_index_++;
-    current_background_wallpaper_image_index_ %= total_background_image_count_;
+    LOG(WARNING) << "ViewCounterModel::RegisterPageView: count_to_branded_wallpaper_: " << count_to_branded_wallpaper_ << " current_wallpaper_image_index_: " << current_wallpaper_image_index_ << " current_branded_wallpaper_image_index_: " << current_branded_wallpaper_image_index_;
+    current_wallpaper_image_index_++;
+    current_wallpaper_image_index_ %= total_image_count_;
   }
 }
 
@@ -65,9 +64,9 @@ void ViewCounterModel::Reset(bool use_initial_count) {
       use_initial_count ? kInitialCountToBrandedWallpaper
                         : kRegularCountToBrandedWallpaper;
   current_wallpaper_image_index_ = 0;
-  current_background_wallpaper_image_index_ = 0;
+  current_branded_wallpaper_image_index_ = 0;
   total_image_count_ = -1;
-  total_background_image_count_ = -1;
+  total_branded_image_count_ = -1;
   ignore_count_to_branded_wallpaper_ = false;
 }
 

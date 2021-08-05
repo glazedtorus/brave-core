@@ -18,18 +18,20 @@ class ViewCounterModel {
   ViewCounterModel(const ViewCounterModel&) = delete;
   ViewCounterModel& operator=(const ViewCounterModel&) = delete;
 
-  int current_wallpaper_image_index(bool sponsered) const {
-    if (sponsered)
-      return current_wallpaper_image_index_;
-    else
-      return current_background_wallpaper_image_index_;
+  int current_wallpaper_image_index() const {
+    return current_wallpaper_image_index_;
   }
 
-  void set_total_image_count(int count, bool sponsered) {
-    if (sponsered)
-      total_image_count_ = count;
-    else
-      total_background_image_count_ = count;
+  int current_branded_wallpaper_image_index() const {
+    return current_branded_wallpaper_image_index_;
+  }
+
+  void set_total_image_count(int count) {
+    total_image_count_ = count;
+  }
+
+  void set_total_branded_image_count(int count) {
+    total_branded_image_count_ = count;
   }
 
   void set_ignore_count_to_branded_wallpaper(bool ignore) {
@@ -52,10 +54,10 @@ class ViewCounterModel {
   FRIEND_TEST_ALL_PREFIXES(NTPBackgroundImagesViewCounterTest, ModelTest);
 
   int current_wallpaper_image_index_ = 0;
-  int current_background_wallpaper_image_index_ = 0;
+  int current_branded_wallpaper_image_index_ = 0;
   int count_to_branded_wallpaper_ = 0;
   int total_image_count_ = 0;
-  int total_background_image_count_ = 0;
+  int total_branded_image_count_ = 0;
   bool ignore_count_to_branded_wallpaper_ = false;
 };
 

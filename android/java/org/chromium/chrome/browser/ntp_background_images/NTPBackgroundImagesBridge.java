@@ -147,12 +147,15 @@ public class NTPBackgroundImagesBridge {
             String imagePath, int focalPointX, int focalPointY,
             String logoPath, String logoDestinationUrl,
             String themeName, boolean isSponsored,
-            String creativeInstanceId, String wallpaperId) {
+            String creativeInstanceId, String author, String link,
+            String wallpaperId) {
         Log.w("NTPBackgroundImagesBridge", "imagePath: " + imagePath);
         Log.w("NTPBackgroundImagesBridge", "logoPath: " + logoPath);
         Log.w("NTPBackgroundImagesBridge", "logoDestinationUrl: " + logoDestinationUrl);
         Log.w("NTPBackgroundImagesBridge", "isSponsored: " + String.valueOf(isSponsored));
         Log.w("NTPBackgroundImagesBridge", "creativeInstanceId: " + creativeInstanceId);
+        Log.w("NTPBackgroundImagesBridge", "author: " + author);
+        Log.w("NTPBackgroundImagesBridge", "link: " + link);
         Log.w("NTPBackgroundImagesBridge", "wallpaperId: " + wallpaperId);
         return new Wallpaper(imagePath, focalPointX, focalPointY,
                              logoPath, logoDestinationUrl,
