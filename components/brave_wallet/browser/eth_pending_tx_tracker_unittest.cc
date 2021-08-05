@@ -68,9 +68,9 @@ TEST_F(EthPendingTxTrackerUnitTest, IsNonceTaken) {
   EthJsonRpcController controller(brave_wallet::mojom::Network::Mainnet,
                                   shared_url_loader_factory());
   EthTxStateManager tx_state_manager(GetPrefs());
-  EthNonceTracker nonce_tracker(&tx_state_manager, &controller);
-  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &controller,
-                                         &nonce_tracker);
+  EthNonceTracker nonce_tracker(&tx_state_manager, controller.MakeRemote());
+  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &nonce_tracker,
+                                         controller.MakeRemote());
 
   EthTxStateManager::TxMeta meta;
   meta.from = EthAddress::FromHex("0x2f015c60e0be116b1f0cd534704db9c92118fb6a");
@@ -95,10 +95,10 @@ TEST_F(EthPendingTxTrackerUnitTest, ShouldTxDropped) {
   EthJsonRpcController controller(brave_wallet::mojom::Network::Mainnet,
                                   shared_url_loader_factory());
   EthTxStateManager tx_state_manager(GetPrefs());
-  EthNonceTracker nonce_tracker(&tx_state_manager, &controller);
-  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &controller,
-                                         &nonce_tracker);
-  pending_tx_tracker.network_nonce_map_[addr.ToHex()] = uint256_t(3);
+  EthNonceTracker nonce_tracker(&tx_state_manager, controller.MakeRemote());
+  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &nonce_tracker,
+                                         controller.MakeRemote());
+  pending_tx_tracker.network_nonce_map_[addr.ToHex()] = "0x3";
 
   EthTxStateManager::TxMeta meta;
   meta.from = addr;
@@ -125,9 +125,9 @@ TEST_F(EthPendingTxTrackerUnitTest, DropTransaction) {
   EthJsonRpcController controller(brave_wallet::mojom::Network::Mainnet,
                                   shared_url_loader_factory());
   EthTxStateManager tx_state_manager(GetPrefs());
-  EthNonceTracker nonce_tracker(&tx_state_manager, &controller);
-  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &controller,
-                                         &nonce_tracker);
+  EthNonceTracker nonce_tracker(&tx_state_manager, controller.MakeRemote());
+  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &nonce_tracker,
+                                         controller.MakeRemote());
   EthTxStateManager::TxMeta meta;
   meta.id = "001";
   meta.status = EthTxStateManager::TransactionStatus::SUBMITTED;
@@ -148,9 +148,9 @@ TEST_F(EthPendingTxTrackerUnitTest, UpdatePendingTransactions) {
   EthJsonRpcController controller(brave_wallet::mojom::Network::Mainnet,
                                   shared_url_loader_factory());
   EthTxStateManager tx_state_manager(GetPrefs());
-  EthNonceTracker nonce_tracker(&tx_state_manager, &controller);
-  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &controller,
-                                         &nonce_tracker);
+  EthNonceTracker nonce_tracker(&tx_state_manager, controller.MakeRemote());
+  EthPendingTxTracker pending_tx_tracker(&tx_state_manager, &nonce_tracker,
+                                         controller.MakeRemote());
   EthTxStateManager::TxMeta meta;
   meta.id = "001";
   meta.from = addr1;
@@ -201,7 +201,7 @@ TEST_F(EthPendingTxTrackerUnitTest, UpdatePendingTransactions) {
   EXPECT_EQ(meta_from_state->status,
             EthTxStateManager::TransactionStatus::CONFIRMED);
   EXPECT_EQ(meta_from_state->from, addr1);
-  EXPECT_EQ(meta_from_state->tx_receipt.contract_address,
+  EXPECT_EQ(meta_from_state->tx_receipt->contract_address,
             "0xb60e8dd61c5d32be8058bb8eb970870f07233155");
 
   meta_from_state = tx_state_manager.GetTx("003");
@@ -209,13 +209,13 @@ TEST_F(EthPendingTxTrackerUnitTest, UpdatePendingTransactions) {
   EXPECT_EQ(meta_from_state->from, addr2);
   EXPECT_EQ(meta_from_state->status,
             EthTxStateManager::TransactionStatus::DROPPED);
-  EXPECT_NE(meta_from_state->tx_receipt.contract_address,
+  EXPECT_NE(meta_from_state->tx_receipt->contract_address,
             "0xb60e8dd61c5d32be8058bb8eb970870f07233155");
   meta_from_state = tx_state_manager.GetTx("004");
   ASSERT_NE(meta_from_state, nullptr);
   EXPECT_EQ(meta_from_state->status,
             EthTxStateManager::TransactionStatus::CONFIRMED);
-  EXPECT_EQ(meta_from_state->tx_receipt.contract_address,
+  EXPECT_EQ(meta_from_state->tx_receipt->contract_address,
             "0xb60e8dd61c5d32be8058bb8eb970870f07233155");
 }
 

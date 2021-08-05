@@ -14,6 +14,7 @@
 #include "brave/components/brave_wallet/browser/brave_wallet_types.h"
 #include "brave/components/brave_wallet/browser/eth_address.h"
 #include "brave/components/brave_wallet/browser/eth_transaction.h"
+#include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 class PrefService;
@@ -50,7 +51,7 @@ class EthTxStateManager {
     base::Time created_time;
     base::Time submitted_time;
     base::Time confirmed_time;
-    TransactionReceipt tx_receipt;
+    mojom::TransactionReceiptPtr tx_receipt;
     std::string tx_hash;
     std::unique_ptr<EthTransaction> tx;
   };

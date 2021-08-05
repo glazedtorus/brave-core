@@ -90,8 +90,12 @@ TEST(Eip2930TransactionUnitTest, GetMessageToSign) {
 
   access_list->push_back(item);
 
-  EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx.GetMessageToSign())),
+  tx.GetMessageToSign(
+      0, base::BindOnce([](const std::vector<uint8_t>& message) {
+        EXPECT_EQ(
+            base::ToLowerASCII(base::HexEncode(message)),
             "78528e2724aa359c58c13e43a7c467eb721ce8d410c2a12ee62943a3aaefb60b");
+      }));
 }
 
 TEST(Eip2930TransactionUnitTest, GetSignedTransaction) {
@@ -122,19 +126,32 @@ TEST(Eip2930TransactionUnitTest, GetSignedTransaction) {
   HDKey key;
   key.SetPrivateKey(private_key);
   int recid;
-  const std::vector<uint8_t> signature =
-      key.Sign(tx.GetMessageToSign(), &recid);
+
+  std::vector<uint8_t> message;
+  tx.GetMessageToSign(
+      0, base::BindOnce([](std::vector<uint8_t>* message,
+                           const std::vector<uint8_t>& m) { *message = m; },
+                        &message));
+
+  const std::vector<uint8_t> signature = key.Sign(message, &recid);
 
   ASSERT_FALSE(tx.IsSigned());
-  tx.ProcessSignature(signature, recid);
+  tx.ProcessSignature(signature, recid, 0);
   ASSERT_TRUE(tx.IsSigned());
-  EXPECT_EQ(
-      tx.GetSignedTransaction(),
-      "0x01f8a587796f6c6f76337880843b9aca008262d494df0a88b2b68c673713a8ec826003"
-      "676f272e35730180f838f7940000000000000000000000000000000000001337e1a00000"
-      "00000000000000000000000000000000000000000000000000000000000080a0294ac940"
-      "77b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938da00be950468ba1c2"
-      "5a5cb50e9f6d8aa13c8cd21f24ba909402775b262ac76d374d");
+
+  tx.GetSignedTransaction(
+      base::BindOnce([](const std::string& signed_transaction) {
+        EXPECT_EQ(signed_transaction,
+                  "0x01f8a587796f6c6f76337880843b9aca008262d494df0a88b2b68c6737"
+                  "13a8ec826003"
+                  "676f272e35730180f838f794000000000000000000000000000000000000"
+                  "1337e1a00000"
+                  "000000000000000000000000000000000000000000000000000000000000"
+                  "80a0294ac940"
+                  "77b35057971e6b4b06dfdf55a6fbed819133a6c1d31e187f1bca938da00b"
+                  "e950468ba1c2"
+                  "5a5cb50e9f6d8aa13c8cd21f24ba909402775b262ac76d374d");
+      }));
 
   EXPECT_EQ(tx.v_, 0u);
   EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx.r_)),
@@ -160,8 +177,8 @@ TEST(Eip2930TransactionUnitTest, Serialization) {
 
   base::Value tx_value = tx.ToValue();
   auto tx_from_value = Eip2930Transaction::FromValue(tx_value);
-  ASSERT_NE(tx_from_value, absl::nullopt);
-  EXPECT_EQ(tx_from_value, tx);
+  ASSERT_NE(tx_from_value, nullptr);
+  EXPECT_EQ(*tx_from_value, tx);
 }
 
 TEST(Eip2930TransactionUnitTest, GetBaseFee) {

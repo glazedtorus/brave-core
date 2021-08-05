@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/bind.h"
+#include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/eth_address.h"
 #include "brave/components/brave_wallet/browser/eth_json_rpc_controller.h"
 #include "brave/components/brave_wallet/browser/eth_tx_state_manager.h"
@@ -41,17 +42,28 @@ uint256_t GetHighestContinuousFrom(
 
 }  // namespace
 
-EthNonceTracker::EthNonceTracker(EthTxStateManager* tx_state_manager,
-                                 EthJsonRpcController* rpc_controller)
-    : tx_state_manager_(tx_state_manager),
-      rpc_controller_(rpc_controller),
-      weak_factory_(this) {}
+EthNonceTracker::EthNonceTracker(
+    EthTxStateManager* tx_state_manager,
+    mojo::PendingRemote<mojom::EthJsonRpcController>
+        eth_json_rpc_controller_pending)
+    : tx_state_manager_(tx_state_manager), weak_factory_(this) {
+  eth_json_rpc_controller_.Bind(std::move(eth_json_rpc_controller_pending));
+  DCHECK(eth_json_rpc_controller_);
+  eth_json_rpc_controller_.set_disconnect_handler(base::BindOnce(
+      &EthNonceTracker::OnConnectionError, weak_factory_.GetWeakPtr()));
+}
+
 EthNonceTracker::~EthNonceTracker() = default;
 
 void EthNonceTracker::GetNextNonce(const EthAddress& from,
                                    GetNextNonceCallback callback) {
   const std::string hex_address = from.ToHex();
-  rpc_controller_->GetTransactionCount(
+  if (!eth_json_rpc_controller_) {
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  eth_json_rpc_controller_->GetTransactionCount(
       hex_address, base::BindOnce(&EthNonceTracker::OnGetNetworkNonce,
                                   weak_factory_.GetWeakPtr(), EthAddress(from),
                                   std::move(callback)));
@@ -60,7 +72,7 @@ void EthNonceTracker::GetNextNonce(const EthAddress& from,
 void EthNonceTracker::OnGetNetworkNonce(EthAddress from,
                                         GetNextNonceCallback callback,
                                         bool status,
-                                        uint256_t network_nonce) {
+                                        const std::string& network_nonce) {
   if (!nonce_lock_.Try()) {
     std::move(callback).Run(false, network_nonce);
     return;
@@ -69,7 +81,15 @@ void EthNonceTracker::OnGetNetworkNonce(EthAddress from,
       EthTxStateManager::TransactionStatus::CONFIRMED, from);
   uint256_t local_highest = GetHighestLocallyConfirmed(confirmed_transactions);
 
-  uint256_t highest_confirmed = std::max(network_nonce, local_highest);
+  uint256_t network_nonce_uint;
+  if (!HexValueToUint256(network_nonce, &network_nonce_uint)) {
+    LOG(ERROR) << "Error converting network nonce to uint256_t";
+    nonce_lock_.Release();
+    std::move(callback).Run(false, "");
+    return;
+  }
+
+  uint256_t highest_confirmed = std::max(network_nonce_uint, local_highest);
 
   auto pending_transactions = tx_state_manager_->GetTransactionsByStatus(
       EthTxStateManager::TransactionStatus::SUBMITTED, from);
@@ -77,10 +97,14 @@ void EthNonceTracker::OnGetNetworkNonce(EthAddress from,
   uint256_t highest_continuous_from =
       GetHighestContinuousFrom(pending_transactions, highest_confirmed);
 
-  uint256_t nonce = std::max(network_nonce, highest_continuous_from);
+  uint256_t nonce = std::max(network_nonce_uint, highest_continuous_from);
 
   nonce_lock_.Release();
-  std::move(callback).Run(true, nonce);
+  std::move(callback).Run(true, Uint256ValueToHex(nonce));
+}
+
+void EthNonceTracker::OnConnectionError() {
+  eth_json_rpc_controller_.reset();
 }
 
 }  // namespace brave_wallet

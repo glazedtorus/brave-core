@@ -296,7 +296,7 @@ TEST_F(KeyringControllerUnitTest, UnlockResumesDefaultKeyring) {
     ASSERT_EQ(true, bool_value());
     ASSERT_FALSE(controller.IsLocked());
 
-    HDKeyring* keyring = controller.GetDefaultKeyring();
+    HDKeyring* keyring = controller.default_keyring_.get();
     EXPECT_EQ(GetPrefs()->GetString(kBraveWalletPasswordEncryptorSalt), salt);
     EXPECT_EQ(GetPrefs()->GetString(kBraveWalletPasswordEncryptorNonce), nonce);
     EXPECT_EQ(GetPrefs()->GetString(kBraveWalletEncryptedMnemonic), mnemonic);
@@ -366,26 +366,6 @@ TEST_F(KeyringControllerUnitTest, GetMnemonicForDefaultKeyring) {
   EXPECT_EQ(string_value(), mnemonic);
 }
 
-TEST_F(KeyringControllerUnitTest, GetDefaultKeyring) {
-  KeyringController controller(GetPrefs());
-  EXPECT_EQ(controller.GetDefaultKeyring(), nullptr);
-  HDKeyring* keyring = controller.CreateDefaultKeyring("brave");
-  ASSERT_NE(keyring, nullptr);
-  EXPECT_EQ(controller.GetDefaultKeyring(), keyring);
-  keyring->AddAccounts(1);
-  const std::string address = keyring->GetAddress(0);
-
-  controller.Lock();
-  EXPECT_EQ(controller.GetDefaultKeyring(), nullptr);
-
-  controller.Unlock(
-      "brave", base::BindOnce(&KeyringControllerUnitTest::GetBooleanCallback,
-                              base::Unretained(this)));
-  EXPECT_FALSE(controller.IsLocked());
-  ASSERT_NE(controller.GetDefaultKeyring(), nullptr);
-  EXPECT_EQ(controller.GetDefaultKeyring()->GetAddress(0), address);
-}
-
 TEST_F(KeyringControllerUnitTest, LockAndUnlock) {
   {
     KeyringController controller(GetPrefs());
@@ -409,7 +389,7 @@ TEST_F(KeyringControllerUnitTest, LockAndUnlock) {
     controller.Lock();
     EXPECT_TRUE(controller.IsLocked());
     EXPECT_EQ(GetPrefs()->GetInteger(kBraveWalletDefaultKeyringAccountNum), 1);
-    EXPECT_TRUE(controller.default_keyring_->empty());
+    EXPECT_FALSE(controller.default_keyring_);
 
     controller.Unlock(
         "abc", base::BindOnce(&KeyringControllerUnitTest::GetBooleanCallback,
@@ -425,7 +405,7 @@ TEST_F(KeyringControllerUnitTest, LockAndUnlock) {
     controller.Lock();
     EXPECT_TRUE(controller.IsLocked());
     EXPECT_EQ(GetPrefs()->GetInteger(kBraveWalletDefaultKeyringAccountNum), 2);
-    EXPECT_TRUE(controller.default_keyring_->empty());
+    EXPECT_FALSE(controller.default_keyring_);
 
     // Simulate unlock shutdown
     controller.Unlock(

@@ -36,8 +36,12 @@ TEST(EthTransactionUnitTest, GetMessageToSign) {
       EthAddress::FromHex("0xbe862ad9abfe6f22bcb087716c7d89a26051f74c"),
       0x016345785d8a0000, data));
 
-  EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx1.GetMessageToSign())),
+  tx1.GetMessageToSign(
+      0, base::BindOnce([](const std::vector<uint8_t>& message) {
+        EXPECT_EQ(
+            base::ToLowerASCII(base::HexEncode(message)),
             "61e1ec33764304dddb55348e7883d4437426f44ab3ef65e6da1e025734c03ff0");
+      }));
 
   data.clear();
   EthTransaction tx2(EthTransaction::TxData(
@@ -46,8 +50,12 @@ TEST(EthTransactionUnitTest, GetMessageToSign) {
       0x2386f26fc10000, data));
 
   // with chain id (mainnet)
-  EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx2.GetMessageToSign(1))),
+  tx2.GetMessageToSign(
+      1, base::BindOnce([](const std::vector<uint8_t>& message) {
+        EXPECT_EQ(
+            base::ToLowerASCII(base::HexEncode(message)),
             "f97c73fdca079da7652dbc61a46cd5aeef804008e057be3e712c43eac389aaf0");
+      }));
 
   // EIP 155 test vectors
   const struct {
@@ -96,8 +104,14 @@ TEST(EthTransactionUnitTest, GetMessageToSign) {
         EthAddress::FromHex(cases[i].to), cases[i].value,
         std::vector<uint8_t>()));
     // with chain id (mainnet)
-    EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx.GetMessageToSign(1))),
-              cases[i].hash);
+    tx.GetMessageToSign(
+        1, base::BindOnce(
+               [](const std::string& cases_hash,
+                  const std::vector<uint8_t>& message) {
+                 EXPECT_EQ(base::ToLowerASCII(base::HexEncode(message)),
+                           cases_hash);
+               },
+               cases[i].hash));
   }
 }
 
@@ -113,7 +127,13 @@ TEST(EthTransactionUnitTest, GetSignedTransaction) {
       0x09, 0x4a817c800, 0x5208,
       EthAddress::FromHex("0x3535353535353535353535353535353535353535"),
       0x0de0b6b3a7640000, std::vector<uint8_t>()));
-  const std::vector<uint8_t> message = tx.GetMessageToSign(1);
+
+  std::vector<uint8_t> message;
+  tx.GetMessageToSign(
+      1, base::BindOnce([](std::vector<uint8_t>* message,
+                           const std::vector<uint8_t>& m) { *message = m; },
+                        &message));
+
   EXPECT_EQ(base::ToLowerASCII(base::HexEncode(message)),
             "daf5a779ae972f972197303d7b574746c7ef83eadac0f2791ad23db92e4c8e53");
 
@@ -134,11 +154,15 @@ TEST(EthTransactionUnitTest, GetSignedTransaction) {
   EXPECT_FALSE(tx.IsSigned());
 
   tx.ProcessSignature(signature, recid, 1);
-  EXPECT_EQ(tx.GetSignedTransaction(),
+  tx.GetSignedTransaction(
+      base::BindOnce([](const std::string& signed_transaction) {
+        EXPECT_EQ(
+            signed_transaction,
             "0xf86c098504a817c8008252089435353535353535353535353535353535353535"
             "35880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d"
             "3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3"
             "dc64214b297fb1966a3b6d83");
+      }));
 
   EXPECT_TRUE(tx.IsSigned());
   EXPECT_EQ(tx.v_, 37);
@@ -157,8 +181,8 @@ TEST(EthTransactionUnitTest, TransactionAndValue) {
       0x0de0b6b3a7640000, std::vector<uint8_t>()));
   base::Value tx_value = tx.ToValue();
   auto tx_from_value = EthTransaction::FromValue(tx_value);
-  ASSERT_NE(tx_from_value, absl::nullopt);
-  EXPECT_EQ(tx_from_value, tx);
+  ASSERT_NE(tx_from_value, nullptr);
+  EXPECT_EQ(*tx_from_value, tx);
 }
 
 TEST(EthTransactionUnitTest, GetBaseFee) {

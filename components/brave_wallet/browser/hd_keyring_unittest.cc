@@ -12,6 +12,8 @@
 #include "brave/components/brave_wallet/browser/eth_transaction.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
+#include "base/test/task_environment.h"
+
 namespace brave_wallet {
 
 TEST(HDKeyringUnitTest, ConstructRootHDKey) {
@@ -74,14 +76,20 @@ TEST(HDKeyringUnitTest, Accounts) {
 }
 
 TEST(HDKeyringUnitTest, SignTransaction) {
+  base::test::SingleThreadTaskEnvironment task_environment(
+      base::test::SingleThreadTaskEnvironment::MainThreadType::UI);
+
   // Specific signature check is in eth_transaction_unittest.cc
   HDKeyring keyring;
-  EthTransaction tx(EthTransaction::TxData(
+  auto tx = std::make_unique<EthTransaction>(EthTransaction::TxData(
       0x09, 0x4a817c800, 0x5208,
       EthAddress::FromHex("0x3535353535353535353535353535353535353535"),
       0x0de0b6b3a7640000, std::vector<uint8_t>()));
-  keyring.SignTransaction("0xDEADBEEFdeadbeefdeadbeefdeadbeefDEADBEEF", &tx);
-  EXPECT_FALSE(tx.IsSigned());
+  keyring.SignTransaction(
+      "0xDEADBEEFdeadbeefdeadbeefdeadbeefDEADBEEF", tx->MakeRemote(),
+      base::BindOnce([](EthTransaction* tx) { EXPECT_FALSE(tx->IsSigned()); },
+                     tx.get()));
+  base::RunLoop().RunUntilIdle();
 
   std::vector<uint8_t> seed;
   EXPECT_TRUE(base::HexStringToBytes(
@@ -90,8 +98,12 @@ TEST(HDKeyringUnitTest, SignTransaction) {
       &seed));
   keyring.ConstructRootHDKey(seed, "m/44'/60'/0'/0");
   keyring.AddAccounts();
-  keyring.SignTransaction(keyring.GetAddress(0), &tx);
-  EXPECT_TRUE(tx.IsSigned());
+  keyring.SignTransaction(
+      keyring.GetAddress(0), tx->MakeRemote(),
+      base::BindOnce([](EthTransaction* tx) { EXPECT_TRUE(tx->IsSigned()); },
+                     tx.get()));
+
+  base::RunLoop().RunUntilIdle();
 }
 
 TEST(HDKeyringUnitTest, SignMessage) {

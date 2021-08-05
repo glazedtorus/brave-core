@@ -6,12 +6,16 @@
 #ifndef BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_ETH_TRANSACTION_H_
 #define BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_ETH_TRANSACTION_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "base/gtest_prod_util.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_types.h"
 #include "brave/components/brave_wallet/browser/eth_address.h"
+#include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace base {
@@ -23,7 +27,7 @@ FORWARD_DECLARE_TEST(EthTransactionTest, GetSignedTransaction);
 FORWARD_DECLARE_TEST(EthTransactionTest, TransactionAndValue);
 FORWARD_DECLARE_TEST(Eip2930TransactionUnitTest, GetSignedTransaction);
 
-class EthTransaction {
+class EthTransaction : public mojom::EthTransaction {
  public:
   struct TxData {
     TxData();
@@ -44,11 +48,13 @@ class EthTransaction {
   };
   EthTransaction();
   explicit EthTransaction(const TxData&);
-  EthTransaction(const EthTransaction&);
-  virtual ~EthTransaction();
+
+  ~EthTransaction() override;
   bool operator==(const EthTransaction&) const;
 
-  static absl::optional<EthTransaction> FromValue(const base::Value& value);
+  mojo::PendingRemote<mojom::EthTransaction> MakeRemote();
+
+  static std::unique_ptr<EthTransaction> FromValue(const base::Value& value);
 
   uint8_t type() const { return type_; }
 
@@ -71,16 +77,16 @@ class EthTransaction {
   // return
   // keccack(rlp([nonce, gasPrice, gasLimit, to, value, data, chainID, 0, 0])
   // Support EIP-155 chain id
-  virtual std::vector<uint8_t> GetMessageToSign(uint64_t chain_id = 0) const;
+  void GetMessageToSign(uint64_t chain_id, GetMessageToSignCallback) override;
 
   // return rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])
-  virtual std::string GetSignedTransaction() const;
+  void GetSignedTransaction(GetSignedTransactionCallback) override;
 
   // signature and recid will be used to produce v, r, s
   // Support EIP-155 chain id
-  virtual void ProcessSignature(const std::vector<uint8_t> signature,
-                                int recid,
-                                uint64_t chain_id = 0);
+  void ProcessSignature(const std::vector<uint8_t>& signature,
+                        int32_t recid,
+                        uint64_t chain_id) override;
 
   virtual bool IsSigned() const;
 
@@ -110,6 +116,8 @@ class EthTransaction {
   std::vector<uint8_t> s_;
 
  private:
+  mojo::ReceiverSet<mojom::EthTransaction> receivers_;
+
   FRIEND_TEST_ALL_PREFIXES(EthTransactionUnitTest, GetSignedTransaction);
   FRIEND_TEST_ALL_PREFIXES(EthTransactionUnitTest, TransactionAndValue);
   FRIEND_TEST_ALL_PREFIXES(Eip2930TransactionUnitTest, GetSignedTransaction);

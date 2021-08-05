@@ -10,19 +10,28 @@
 
 #include "base/logging.h"
 #include "base/synchronization/lock.h"
+#include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/eth_json_rpc_controller.h"
 #include "brave/components/brave_wallet/browser/eth_nonce_tracker.h"
+#include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace brave_wallet {
 
-EthPendingTxTracker::EthPendingTxTracker(EthTxStateManager* tx_state_manager,
-                                         EthJsonRpcController* rpc_controller,
-                                         EthNonceTracker* nonce_tracker)
+EthPendingTxTracker::EthPendingTxTracker(
+    EthTxStateManager* tx_state_manager,
+    EthNonceTracker* nonce_tracker,
+    mojo::PendingRemote<mojom::EthJsonRpcController>
+        eth_json_rpc_controller_pending)
     : tx_state_manager_(tx_state_manager),
-      rpc_controller_(rpc_controller),
       nonce_tracker_(nonce_tracker),
-      weak_factory_(this) {}
+      weak_factory_(this) {
+  eth_json_rpc_controller_.Bind(std::move(eth_json_rpc_controller_pending));
+  DCHECK(eth_json_rpc_controller_);
+  eth_json_rpc_controller_.set_disconnect_handler(base::BindOnce(
+      &EthPendingTxTracker::OnConnectionError, weak_factory_.GetWeakPtr()));
+}
+
 EthPendingTxTracker::~EthPendingTxTracker() = default;
 
 void EthPendingTxTracker::UpdatePendingTransactions() {
@@ -39,16 +48,23 @@ void EthPendingTxTracker::UpdatePendingTransactions() {
       continue;
     }
     std::string id = pending_transaction->id;
-    rpc_controller_->GetTransactionReceipt(
-        pending_transaction->tx_hash,
-        base::BindOnce(&EthPendingTxTracker::OnGetTxReceipt,
-                       weak_factory_.GetWeakPtr(), std::move(id)));
+    if (eth_json_rpc_controller_) {
+      eth_json_rpc_controller_->GetTransactionReceipt(
+          pending_transaction->tx_hash,
+          base::BindOnce(&EthPendingTxTracker::OnGetTxReceipt,
+                         weak_factory_.GetWeakPtr(), std::move(id)));
+    }
   }
 
   nonce_lock->Release();
 }
 
 void EthPendingTxTracker::ResubmitPendingTransactions() {
+  if (!eth_json_rpc_controller_) {
+    LOG(ERROR) << "Could not resubmit pending transaction because "
+                  "eth_json_rpc_controller_ is not available";
+    return;
+  }
   // TODO(darkdh): limit the rate of tx publishing
   auto pending_transactions = tx_state_manager_->GetTransactionsByStatus(
       EthTxStateManager::TransactionStatus::SUBMITTED,
@@ -57,8 +73,15 @@ void EthPendingTxTracker::ResubmitPendingTransactions() {
     if (!pending_transaction->tx->IsSigned()) {
       continue;
     }
-    rpc_controller_->SendRawTransaction(
-        pending_transaction->tx->GetSignedTransaction(),
+
+    std::string signed_transaction;
+    pending_transaction->tx->GetSignedTransaction(
+        base::BindOnce([](std::string* signed_transaction,
+                          const std::string& s) { *signed_transaction = s; },
+                       &signed_transaction));
+
+    eth_json_rpc_controller_->SendRawTransaction(
+        signed_transaction,
         base::BindOnce(&EthPendingTxTracker::OnSendRawTransaction,
                        weak_factory_.GetWeakPtr()));
   }
@@ -66,7 +89,7 @@ void EthPendingTxTracker::ResubmitPendingTransactions() {
 
 void EthPendingTxTracker::OnGetTxReceipt(std::string id,
                                          bool status,
-                                         TransactionReceipt receipt) {
+                                         mojom::TransactionReceiptPtr receipt) {
   if (!status)
     return;
   base::Lock* nonce_lock = nonce_tracker_->GetLock();
@@ -79,8 +102,8 @@ void EthPendingTxTracker::OnGetTxReceipt(std::string id,
     nonce_lock->Release();
     return;
   }
-  if (receipt.status == true) {
-    meta->tx_receipt = receipt;
+  if (receipt->status == true) {
+    meta->tx_receipt = std::move(receipt);
     meta->status = EthTxStateManager::TransactionStatus::CONFIRMED;
     meta->confirmed_time = base::Time::Now();
     tx_state_manager_->AddOrUpdateTx(*meta);
@@ -93,7 +116,7 @@ void EthPendingTxTracker::OnGetTxReceipt(std::string id,
 
 void EthPendingTxTracker::OnGetNetworkNonce(std::string address,
                                             bool status,
-                                            uint256_t result) {
+                                            const std::string& result) {
   if (!status)
     return;
   network_nonce_map_[address] = result;
@@ -116,16 +139,26 @@ bool EthPendingTxTracker::IsNonceTaken(const EthTxStateManager::TxMeta& meta) {
 
 bool EthPendingTxTracker::ShouldTxDropped(
     const EthTxStateManager::TxMeta& meta) {
+  if (!eth_json_rpc_controller_) {
+    LOG(ERROR) << "Could not check if tx should be dropped because "
+                  "eth_json_rpc_controller_ is not available";
+    return false;
+  }
   const std::string hex_address = meta.from.ToHex();
   if (network_nonce_map_.find(hex_address) == network_nonce_map_.end()) {
-    rpc_controller_->GetTransactionCount(
+    eth_json_rpc_controller_->GetTransactionCount(
         hex_address,
         base::BindOnce(&EthPendingTxTracker::OnGetNetworkNonce,
                        weak_factory_.GetWeakPtr(), std::move(hex_address)));
   } else {
-    uint256_t network_nonce = network_nonce_map_[hex_address];
+    std::string network_nonce = network_nonce_map_[hex_address];
+
+    uint256_t network_nonce_uint;
+    if (!HexValueToUint256(network_nonce, &network_nonce_uint))
+      return false;
+
     network_nonce_map_.erase(hex_address);
-    if (meta.tx->nonce() < network_nonce)
+    if (meta.tx->nonce() < network_nonce_uint)
       return true;
   }
 
@@ -148,6 +181,10 @@ void EthPendingTxTracker::DropTransaction(EthTxStateManager::TxMeta* meta) {
     return;
   meta->status = EthTxStateManager::TransactionStatus::DROPPED;
   tx_state_manager_->AddOrUpdateTx(*meta);
+}
+
+void EthPendingTxTracker::OnConnectionError() {
+  eth_json_rpc_controller_.reset();
 }
 
 }  // namespace brave_wallet

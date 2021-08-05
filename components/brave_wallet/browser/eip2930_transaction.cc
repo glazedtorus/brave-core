@@ -48,7 +48,7 @@ Eip2930Transaction::Eip2930Transaction(const TxData& tx_data, uint64_t chain_id)
     : EthTransaction(tx_data), chain_id_(chain_id) {
   type_ = 1;
 }
-Eip2930Transaction::Eip2930Transaction(const Eip2930Transaction&) = default;
+
 Eip2930Transaction::~Eip2930Transaction() = default;
 
 bool Eip2930Transaction::operator==(const Eip2930Transaction& tx) const {
@@ -58,35 +58,36 @@ bool Eip2930Transaction::operator==(const Eip2930Transaction& tx) const {
 }
 
 // static
-absl::optional<Eip2930Transaction> Eip2930Transaction::FromValue(
+std::unique_ptr<Eip2930Transaction> Eip2930Transaction::FromValue(
     const base::Value& value) {
-  absl::optional<EthTransaction> legacy_tx = EthTransaction::FromValue(value);
+  auto legacy_tx = EthTransaction::FromValue(value);
   if (!legacy_tx)
-    return absl::nullopt;
+    return nullptr;
   TxData tx_data(legacy_tx->nonce(), legacy_tx->gas_price(),
                  legacy_tx->gas_limit(), legacy_tx->to(), legacy_tx->value(),
                  legacy_tx->data());
 
   const std::string* tx_chain_id = value.FindStringKey("chain_id");
   if (!tx_chain_id)
-    return absl::nullopt;
+    return nullptr;
   uint256_t chain_id;
   if (!HexValueToUint256(*tx_chain_id, &chain_id))
-    return absl::nullopt;
+    return nullptr;
 
-  Eip2930Transaction tx(tx_data, static_cast<uint64_t>(chain_id));
-  tx.v_ = legacy_tx->v();
-  tx.r_ = legacy_tx->r();
-  tx.s_ = legacy_tx->s();
+  auto tx = std::make_unique<Eip2930Transaction>(
+      tx_data, static_cast<uint64_t>(chain_id));
+  tx->v_ = legacy_tx->v();
+  tx->r_ = legacy_tx->r();
+  tx->s_ = legacy_tx->s();
 
   const base::Value* access_list = value.FindKey("access_list");
   if (!access_list)
-    return absl::nullopt;
+    return nullptr;
   absl::optional<AccessList> access_list_from_value =
       ValueToAccessList(*access_list);
   if (!access_list_from_value)
-    return absl::nullopt;
-  tx.access_list_ = *access_list_from_value;
+    return nullptr;
+  tx->access_list_ = *access_list_from_value;
 
   return tx;
 }
@@ -129,8 +130,8 @@ Eip2930Transaction::ValueToAccessList(const base::Value& value) {
   return access_list;
 }
 
-std::vector<uint8_t> Eip2930Transaction::GetMessageToSign(
-    uint64_t chain_id) const {
+void Eip2930Transaction::GetMessageToSign(uint64_t chain_id,
+                                          GetMessageToSignCallback callback) {
   std::vector<uint8_t> result;
   result.push_back(type_);
 
@@ -148,10 +149,11 @@ std::vector<uint8_t> Eip2930Transaction::GetMessageToSign(
 
   const std::string rlp_msg = RLPEncode(std::move(list));
   result.insert(result.end(), rlp_msg.begin(), rlp_msg.end());
-  return KeccakHash(result);
+  std::move(callback).Run(KeccakHash(result));
 }
 
-std::string Eip2930Transaction::GetSignedTransaction() const {
+void Eip2930Transaction::GetSignedTransaction(
+    GetSignedTransactionCallback callback) {
   DCHECK(IsSigned());
 
   // TODO(darkdh): Migrate to std::vector<base::Value>, base::ListValue is
@@ -175,10 +177,10 @@ std::string Eip2930Transaction::GetSignedTransaction() const {
   const std::string rlp_msg = RLPEncode(std::move(list));
   result.insert(result.end(), rlp_msg.begin(), rlp_msg.end());
 
-  return ToHex(result);
+  std::move(callback).Run(ToHex(result));
 }
 
-void Eip2930Transaction::ProcessSignature(const std::vector<uint8_t> signature,
+void Eip2930Transaction::ProcessSignature(const std::vector<uint8_t>& signature,
                                           int recid,
                                           uint64_t chain_id) {
   EthTransaction::ProcessSignature(signature, recid, chain_id_);

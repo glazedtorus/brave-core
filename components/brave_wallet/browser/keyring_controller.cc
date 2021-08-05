@@ -76,8 +76,9 @@ void KeyringController::RegisterProfilePrefs(
 
 HDKeyring* KeyringController::CreateDefaultKeyring(
     const std::string& password) {
-  if (!CreateEncryptor(password))
+  if (!CreateEncryptor(password)) {
     return nullptr;
+  }
 
   const std::string mnemonic = GenerateMnemonic(16);
   if (!CreateDefaultKeyringInternal(mnemonic)) {
@@ -109,9 +110,9 @@ HDKeyring* KeyringController::RestoreDefaultKeyring(
     const std::string& mnemonic,
     const std::string& password) {
   Reset();
-
-  if (!CreateEncryptor(password))
+  if (!CreateEncryptor(password)) {
     return nullptr;
+  }
 
   if (!CreateDefaultKeyringInternal(mnemonic)) {
     // When creation failed(ex. invalid mnemonic), clear the state
@@ -124,15 +125,13 @@ HDKeyring* KeyringController::RestoreDefaultKeyring(
 
 void KeyringController::GetDefaultKeyringInfo(
     GetDefaultKeyringInfoCallback callback) {
-  mojom::KeyringInfoPtr keyring = mojom::KeyringInfo::New();
-  keyring->is_default_keyring_created = IsDefaultKeyringCreated();
-  keyring->is_locked = IsLocked();
-  keyring->is_backed_up = prefs_->GetBoolean(kBraveWalletBackupComplete);
-  if (default_keyring_) {
-    keyring->accounts = default_keyring_->GetAccounts();
-    keyring->account_names = GetAccountNames();
-  }
-  std::move(callback).Run(std::move(keyring));
+  mojom::KeyringInfoPtr keyring_info = mojom::KeyringInfo::New();
+  keyring_info->is_default_keyring_created = IsDefaultKeyringCreated();
+  keyring_info->is_locked = IsLocked();
+  keyring_info->is_backed_up = prefs_->GetBoolean(kBraveWalletBackupComplete);
+  keyring_info->accounts = default_keyring_->GetAccounts();
+  keyring_info->account_names = GetAccountNames();
+  std::move(callback).Run(std::move(keyring_info));
 }
 
 void KeyringController::GetMnemonicForDefaultKeyring(
@@ -142,17 +141,17 @@ void KeyringController::GetMnemonicForDefaultKeyring(
 
 void KeyringController::CreateWallet(const std::string& password,
                                      CreateWalletCallback callback) {
-  auto* keyring = CreateDefaultKeyring(password);
-  if (keyring)
+  HDKeyring* keyring = CreateDefaultKeyring(password);
+  if (keyring) {
     keyring->AddAccounts();
-
+  }
   std::move(callback).Run(GetMnemonicForDefaultKeyringImpl());
 }
 
 void KeyringController::RestoreWallet(const std::string& mnemonic,
                                       const std::string& password,
                                       RestoreWalletCallback callback) {
-  auto* keyring = RestoreDefaultKeyring(mnemonic, password);
+  HDKeyring* keyring = RestoreDefaultKeyring(mnemonic, password);
   if (keyring)
     keyring->AddAccounts();
 
@@ -178,11 +177,10 @@ const std::string KeyringController::GetMnemonicForDefaultKeyringImpl() {
 }
 
 void KeyringController::AddAccount(AddAccountCallback callback) {
-  auto* keyring = GetDefaultKeyring();
-  if (keyring)
-    keyring->AddAccounts();
-
-  std::move(callback).Run(keyring);
+  if (default_keyring_) {
+    default_keyring_->AddAccounts();
+  }
+  std::move(callback).Run(!!default_keyring_);
 }
 
 void KeyringController::IsWalletBackedUp(IsWalletBackedUpCallback callback) {
@@ -218,15 +216,6 @@ void KeyringController::AddNewAccountName(const std::string& account_name) {
   update->Append(base::Value(account_name));
 }
 
-HDKeyring* KeyringController::GetDefaultKeyring() {
-  if (IsLocked()) {
-    LOG(ERROR) << __func__ << ": Must Unlock controller first";
-    return nullptr;
-  }
-
-  return default_keyring_.get();
-}
-
 bool KeyringController::IsLocked() const {
   return encryptor_ == nullptr;
 }
@@ -238,13 +227,14 @@ void KeyringController::Lock() {
   prefs_->SetInteger(kBraveWalletDefaultKeyringAccountNum,
                      default_keyring_->GetAccounts().size());
   default_keyring_->ClearData();
-
+  default_keyring_.reset();
   encryptor_.reset();
 }
 
 void KeyringController::Unlock(const std::string& password,
                                UnlockCallback callback) {
-  if (!ResumeDefaultKeyring(password)) {
+  HDKeyring* keyring = ResumeDefaultKeyring(password);
+  if (!keyring) {
     encryptor_.reset();
     std::move(callback).Run(false);
     return;
@@ -337,6 +327,16 @@ bool KeyringController::CreateDefaultKeyringInternal(
 
 bool KeyringController::IsDefaultKeyringCreated() {
   return prefs_->HasPrefPath(kBraveWalletEncryptedMnemonic);
+}
+
+void KeyringController::SignTransactionByDefaultKeyring(
+    const std::string& address,
+    mojo::PendingRemote<mojom::EthTransaction> pending_tx,
+    SignTransactionByDefaultKeyringCallback callback) {
+  if (!default_keyring_)
+    return;
+  default_keyring_->SignTransaction(address, std::move(pending_tx),
+                                    std::move(callback));
 }
 
 }  // namespace brave_wallet

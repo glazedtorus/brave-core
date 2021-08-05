@@ -9,31 +9,47 @@
 
 #include "base/bind.h"
 #include "base/logging.h"
+#include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/eth_address.h"
 #include "brave/components/brave_wallet/browser/eth_json_rpc_controller.h"
-#include "brave/components/brave_wallet/browser/hd_keyring.h"
 #include "brave/components/brave_wallet/browser/keyring_controller.h"
 
 namespace brave_wallet {
 
-EthTxController::EthTxController(EthJsonRpcController* rpc_controller,
-                                 KeyringController* keyring_controller,
-                                 PrefService* prefs)
-    : rpc_controller_(rpc_controller),
-      keyring_controller_(keyring_controller),
-      tx_state_manager_(std::make_unique<EthTxStateManager>(prefs)),
-      nonce_tracker_(std::make_unique<EthNonceTracker>(tx_state_manager_.get(),
-                                                       rpc_controller_)),
-      pending_tx_tracker_(
-          std::make_unique<EthPendingTxTracker>(tx_state_manager_.get(),
-                                                rpc_controller_,
-                                                nonce_tracker_.get())),
+EthTxController::EthTxController(
+    mojo::PendingRemote<mojom::EthJsonRpcController>
+        eth_json_rpc_controller_pending,
+    mojo::PendingRemote<mojom::KeyringController> keyring_controller_pending,
+    std::unique_ptr<EthNonceTracker> nonce_tracker,
+    std::unique_ptr<EthPendingTxTracker> pending_tx_tracker,
+    PrefService* prefs)
+    : tx_state_manager_(std::make_unique<EthTxStateManager>(prefs)),
+      nonce_tracker_(std::move(nonce_tracker)),
+      pending_tx_tracker_(std::move(pending_tx_tracker)),
       weak_factory_(this) {
-  DCHECK(rpc_controller_);
+  eth_json_rpc_controller_.Bind(std::move(eth_json_rpc_controller_pending));
+  DCHECK(eth_json_rpc_controller_);
+  eth_json_rpc_controller_.set_disconnect_handler(base::BindOnce(
+      &EthTxController::OnConnectionError, weak_factory_.GetWeakPtr()));
+
+  keyring_controller_.Bind(std::move(keyring_controller_pending));
   DCHECK(keyring_controller_);
+  keyring_controller_.set_disconnect_handler(base::BindOnce(
+      &EthTxController::OnConnectionError, weak_factory_.GetWeakPtr()));
 }
 
 EthTxController::~EthTxController() = default;
+
+mojo::PendingRemote<mojom::EthTxController> EthTxController::MakeRemote() {
+  mojo::PendingRemote<mojom::EthTxController> remote;
+  receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());
+  return remote;
+}
+
+void EthTxController::Bind(
+    mojo::PendingReceiver<mojom::EthTxController> receiver) {
+  receivers_.Add(this, std::move(receiver));
+}
 
 void EthTxController::AddObserver(Observer* observer) {
   observers_.AddObserver(observer);
@@ -60,12 +76,14 @@ void EthTxController::AddUnapprovedTransaction(
     observer.OnNewUnapprovedTx(meta);
 }
 
-bool EthTxController::ApproveTransaction(const std::string& tx_meta_id) {
+void EthTxController::ApproveTransaction(const std::string& tx_meta_id,
+                                         ApproveTransactionCallback callback) {
   std::unique_ptr<EthTxStateManager::TxMeta> meta =
       tx_state_manager_->GetTx(tx_meta_id);
   if (!meta) {
     LOG(ERROR) << "No transaction found";
-    return false;
+    std::move(callback).Run(false);
+    return;
   }
   if (!meta->last_gas_price) {
     nonce_tracker_->GetNextNonce(
@@ -74,54 +92,92 @@ bool EthTxController::ApproveTransaction(const std::string& tx_meta_id) {
                        weak_factory_.GetWeakPtr(), std::move(meta)));
   } else {
     uint256_t nonce = meta->tx->nonce();
-    OnGetNextNonce(std::move(meta), true, nonce);
+    OnGetNextNonce(std::move(meta), true, Uint256ValueToHex(nonce));
   }
 
-  return true;
+  std::move(callback).Run(true);
 }
 
-void EthTxController::RejectTransaction(const std::string& tx_meta_id) {
+void EthTxController::RejectTransaction(const std::string& tx_meta_id,
+                                        RejectTransactionCallback callback) {
   std::unique_ptr<EthTxStateManager::TxMeta> meta =
       tx_state_manager_->GetTx(tx_meta_id);
   if (!meta) {
     LOG(ERROR) << "No transaction found";
+    std::move(callback).Run(false);
     return;
   }
   meta->status = EthTxStateManager::TransactionStatus::REJECTED;
   tx_state_manager_->AddOrUpdateTx(*meta);
+  std::move(callback).Run(true);
 }
 
 void EthTxController::OnGetNextNonce(
     std::unique_ptr<EthTxStateManager::TxMeta> meta,
     bool success,
-    uint256_t nonce) {
+    const std::string& nonce) {
   if (!success) {
     // TODO(darkdh): Notify observers
     LOG(ERROR) << "GetNextNonce failed";
     return;
   }
-  meta->tx->set_nonce(nonce);
-  DCHECK(!keyring_controller_->IsLocked());
-  auto* default_keyring = keyring_controller_->GetDefaultKeyring();
-  DCHECK(default_keyring);
-  default_keyring->SignTransaction(meta->from.ToChecksumAddress(),
-                                   meta->tx.get());
-  meta->status = EthTxStateManager::TransactionStatus::APPROVED;
-  tx_state_manager_->AddOrUpdateTx(*meta);
-  PublishTransaction(*meta->tx, meta->id);
+
+  uint256_t nonce_uint;
+  if (!HexValueToUint256(nonce, &nonce_uint)) {
+    LOG(ERROR) << "nonce could not be converted to uint256";
+    return;
+  }
+
+  meta->tx->set_nonce(nonce_uint);
+  if (!keyring_controller_) {
+    LOG(ERROR)
+        << "Keyring controller is not set so can't update tx state manager";
+    return;
+  }
+  keyring_controller_->IsLocked(
+      base::BindOnce([](bool locked) { DCHECK(!locked); }));
+
+  keyring_controller_->SignTransactionByDefaultKeyring(
+      meta->from.ToChecksumAddress(), meta->tx->MakeRemote(),
+      base::BindOnce(
+          [](EthTxStateManager::TxMeta* meta,
+             EthTxStateManager* tx_state_manager, EthTxController* controller) {
+            meta->status = EthTxStateManager::TransactionStatus::APPROVED;
+            tx_state_manager->AddOrUpdateTx(*meta);
+            controller->PublishTransaction(*meta->tx, meta->id);
+          },
+          meta.get(), tx_state_manager_.get(), this));
 }
 
-void EthTxController::PublishTransaction(const EthTransaction& tx,
+void EthTxController::PublishTransaction(EthTransaction& tx,
                                          const std::string& tx_meta_id) {
   if (!tx.IsSigned()) {
     LOG(ERROR) << "Transaction must be signed first";
     return;
   }
 
-  rpc_controller_->SendRawTransaction(
-      tx.GetSignedTransaction(),
-      base::BindOnce(&EthTxController::OnPublishTransaction,
-                     weak_factory_.GetWeakPtr(), std::string(tx_meta_id)));
+  if (!eth_json_rpc_controller_) {
+    LOG(ERROR)
+        << "eth json rpc controller not set, cannot send raw transaction";
+    return;
+  }
+
+  tx.GetSignedTransaction(base::BindOnce(
+      [](base::WeakPtr<brave_wallet::EthTxController> weak_ptr,
+         const std::string& tx_meta_id,
+         mojo::Remote<mojom::EthJsonRpcController>* eth_json_rpc_controller,
+         const std::string& signed_transaction) {
+        if (!eth_json_rpc_controller) {
+          return;
+        }
+
+        (*eth_json_rpc_controller)
+            ->SendRawTransaction(
+                signed_transaction,
+                base::BindOnce(&EthTxController::OnPublishTransaction, weak_ptr,
+                               tx_meta_id));
+      },
+      weak_factory_.GetWeakPtr(), tx_meta_id, &eth_json_rpc_controller_));
 }
 
 void EthTxController::OnPublishTransaction(std::string tx_meta_id,
@@ -140,6 +196,11 @@ void EthTxController::OnPublishTransaction(std::string tx_meta_id,
     tx_state_manager_->AddOrUpdateTx(*meta);
     pending_tx_tracker_->UpdatePendingTransactions();
   }
+}
+
+void EthTxController::OnConnectionError() {
+  eth_json_rpc_controller_.reset();
+  keyring_controller_.reset();
 }
 
 }  // namespace brave_wallet

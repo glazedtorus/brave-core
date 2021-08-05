@@ -78,17 +78,33 @@ std::string HDKeyring::GetAddress(size_t index) {
   return addr.ToChecksumAddress();
 }
 
-void HDKeyring::SignTransaction(const std::string& address,
-                                EthTransaction* tx) {
+void HDKeyring::SignTransaction(
+    const std::string& address,
+    mojo::PendingRemote<mojom::EthTransaction> pending_tx,
+    SignTransactionCallback callback) {
   HDKey* hd_key = GetHDKeyFromAddress(address);
-  if (!hd_key || !tx)
+  if (!hd_key || !pending_tx)
     return;
 
+  mojo::Remote<mojom::EthTransaction> tx;
+  tx.Bind(std::move(pending_tx));
+  if (!tx) {
+    return;
+  }
+
   // TODO(darkdh): chain id
-  const std::vector<uint8_t> message = tx->GetMessageToSign();
-  int recid;
-  const std::vector<uint8_t> signature = hd_key->Sign(message, &recid);
-  tx->ProcessSignature(signature, recid);
+  tx->GetMessageToSign(
+      0, base::BindOnce(
+             [](HDKey* hd_key, mojo::Remote<mojom::EthTransaction>* tx,
+                SignTransactionCallback* callback,
+                const std::vector<uint8_t>& message) {
+               int recid;
+               const std::vector<uint8_t> signature =
+                   hd_key->Sign(message, &recid);
+               (*tx)->ProcessSignature(signature, recid, 0);
+               std::move(*callback).Run();
+             },
+             hd_key, &tx, &callback));
 }
 
 std::vector<uint8_t> HDKeyring::SignMessage(

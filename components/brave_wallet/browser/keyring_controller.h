@@ -27,6 +27,7 @@ namespace brave_wallet {
 
 class HDKeyring;
 class KeyringControllerUnitTest;
+class EthTransaction;
 
 FORWARD_DECLARE_TEST(KeyringControllerUnitTest, GetPrefsInBytes);
 FORWARD_DECLARE_TEST(KeyringControllerUnitTest, SetPrefsInBytes);
@@ -36,6 +37,8 @@ FORWARD_DECLARE_TEST(KeyringControllerUnitTest, CreateDefaultKeyringInternal);
 FORWARD_DECLARE_TEST(KeyringControllerUnitTest, GetMnemonicForDefaultKeyring);
 FORWARD_DECLARE_TEST(KeyringControllerUnitTest, LockAndUnlock);
 FORWARD_DECLARE_TEST(KeyringControllerUnitTest, Reset);
+FORWARD_DECLARE_TEST(KeyringControllerUnitTest, LockAndUnlock);
+FORWARD_DECLARE_TEST(KeyringControllerUnitTest, UnlockResumesDefaultKeyring);
 
 // This class is not thread-safe and should have single owner
 class KeyringController : public KeyedService, public mojom::KeyringController {
@@ -77,8 +80,12 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
   void Reset() override;
 
   // Must unlock before using this API otherwise it will return nullptr
-  HDKeyring* GetDefaultKeyring();
   bool IsDefaultKeyringCreated();
+
+  void SignTransactionByDefaultKeyring(
+      const std::string& address,
+      mojo::PendingRemote<mojom::EthTransaction> pending_tx,
+      SignTransactionByDefaultKeyringCallback callback) override;
 
   bool IsLocked() const;
   // bool Unlock(const std::string& password);
@@ -99,6 +106,9 @@ class KeyringController : public KeyedService, public mojom::KeyringController {
                            GetMnemonicForDefaultKeyring);
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, LockAndUnlock);
   FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, Reset);
+  FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest, LockAndUnlock);
+  FRIEND_TEST_ALL_PREFIXES(KeyringControllerUnitTest,
+                           UnlockResumesDefaultKeyring);
 
   std::vector<std::string> GetAccountNames() const;
 

@@ -24,7 +24,7 @@ Eip1559Transaction::Eip1559Transaction(const TxData& tx_data,
       max_fee_per_gas_(max_fee_per_gas) {
   type_ = 2;
 }
-Eip1559Transaction::Eip1559Transaction(const Eip1559Transaction&) = default;
+
 Eip1559Transaction::~Eip1559Transaction() = default;
 
 bool Eip1559Transaction::operator==(const Eip1559Transaction& tx) const {
@@ -34,43 +34,42 @@ bool Eip1559Transaction::operator==(const Eip1559Transaction& tx) const {
 }
 
 // static
-absl::optional<Eip1559Transaction> Eip1559Transaction::FromValue(
+std::unique_ptr<Eip1559Transaction> Eip1559Transaction::FromValue(
     const base::Value& value) {
-  absl::optional<Eip2930Transaction> tx_2930 =
-      Eip2930Transaction::FromValue(value);
+  auto tx_2930 = Eip2930Transaction::FromValue(value);
   if (!tx_2930)
-    return absl::nullopt;
+    return nullptr;
   TxData tx_data(tx_2930->nonce(), tx_2930->gas_price(), tx_2930->gas_limit(),
                  tx_2930->to(), tx_2930->value(), tx_2930->data());
 
   const std::string* tx_max_priority_fee_per_gas =
       value.FindStringKey("max_priority_fee_per_gas");
   if (!tx_max_priority_fee_per_gas)
-    return absl::nullopt;
+    return nullptr;
   uint256_t max_priority_fee_per_gas;
   if (!HexValueToUint256(*tx_max_priority_fee_per_gas,
                          &max_priority_fee_per_gas))
-    return absl::nullopt;
+    return nullptr;
 
   const std::string* tx_max_fee_per_gas =
       value.FindStringKey("max_fee_per_gas");
   if (!tx_max_fee_per_gas)
-    return absl::nullopt;
+    return nullptr;
   uint256_t max_fee_per_gas;
   if (!HexValueToUint256(*tx_max_fee_per_gas, &max_fee_per_gas))
-    return absl::nullopt;
+    return nullptr;
 
-  Eip1559Transaction tx(tx_data, tx_2930->chain_id(), max_priority_fee_per_gas,
-                        max_fee_per_gas);
-  tx.v_ = tx_2930->v();
-  tx.r_ = tx_2930->r();
-  tx.s_ = tx_2930->s();
+  auto tx = std::make_unique<Eip1559Transaction>(
+      tx_data, tx_2930->chain_id(), max_priority_fee_per_gas, max_fee_per_gas);
+  tx->v_ = tx_2930->v();
+  tx->r_ = tx_2930->r();
+  tx->s_ = tx_2930->s();
 
   return tx;
 }
 
-std::vector<uint8_t> Eip1559Transaction::GetMessageToSign(
-    uint64_t chain_id) const {
+void Eip1559Transaction::GetMessageToSign(uint64_t chain_id,
+                                          GetMessageToSignCallback callback) {
   std::vector<uint8_t> result;
   result.push_back(type_);
 
@@ -89,10 +88,11 @@ std::vector<uint8_t> Eip1559Transaction::GetMessageToSign(
 
   const std::string rlp_msg = RLPEncode(std::move(list));
   result.insert(result.end(), rlp_msg.begin(), rlp_msg.end());
-  return KeccakHash(result);
+  std::move(callback).Run(KeccakHash(result));
 }
 
-std::string Eip1559Transaction::GetSignedTransaction() const {
+void Eip1559Transaction::GetSignedTransaction(
+    GetSignedTransactionCallback callback) {
   DCHECK(IsSigned());
 
   // TODO(darkdh): Migrate to std::vector<base::Value>, base::ListValue is
@@ -117,7 +117,7 @@ std::string Eip1559Transaction::GetSignedTransaction() const {
   const std::string rlp_msg = RLPEncode(std::move(list));
   result.insert(result.end(), rlp_msg.begin(), rlp_msg.end());
 
-  return ToHex(result);
+  std::move(callback).Run(ToHex(result));
 }
 
 base::Value Eip1559Transaction::ToValue() const {

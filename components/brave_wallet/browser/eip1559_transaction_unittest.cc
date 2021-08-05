@@ -30,9 +30,12 @@ TEST(Eip1559TransactionUnitTest, GetMessageToSign) {
   item.storage_keys.push_back(storage_key_1);
 
   access_list->push_back(item);
-
-  EXPECT_EQ(base::ToLowerASCII(base::HexEncode(tx.GetMessageToSign())),
+  tx.GetMessageToSign(
+      0, base::BindOnce([](const std::vector<uint8_t>& m) {
+        EXPECT_EQ(
+            base::ToLowerASCII(base::HexEncode(m)),
             "fa81814f7dd57bad435657a05eabdba2815f41e3f15ddd6139027e7db56b0dea");
+      }));
 }
 
 TEST(Eip1559TransactionUnitTest, GetSignedTransaction) {
@@ -102,17 +105,29 @@ TEST(Eip1559TransactionUnitTest, GetSignedTransaction) {
 
     HDKey key;
     key.SetPrivateKey(private_key);
-    Eip1559Transaction tx(
+    auto tx = std::make_unique<Eip1559Transaction>(
         EthTransaction::TxData(
             cases[i].nonce, 0x00, cases[i].gas_limit,
             EthAddress::FromHex("0x000000000000000000000000000000000000aaaa"),
             cases[i].value, std::vector<uint8_t>()),
         0x04, cases[i].max_priority_fee_per_gas, cases[i].max_fee_per_gas);
+
+    std::vector<uint8_t> signature;
     int recid;
-    const std::vector<uint8_t> signature =
-        key.Sign(tx.GetMessageToSign(), &recid);
-    tx.ProcessSignature(signature, recid);
-    EXPECT_EQ(tx.GetSignedTransaction(), cases[i].signed_tx);
+    tx->GetMessageToSign(0, base::BindOnce(
+                                [](std::vector<uint8_t>* signature, int* recid,
+                                   HDKey* key, const std::vector<uint8_t>& m) {
+                                  *signature = key->Sign(m, recid);
+                                },
+                                &signature, &recid, &key));
+
+    tx->ProcessSignature(signature, recid, 0);
+
+    tx->GetSignedTransaction(base::BindOnce(
+        [](const std::string signed_tx, const std::string& signed_transaction) {
+          EXPECT_EQ(signed_transaction, signed_tx);
+        },
+        cases[i].signed_tx));
   }
 }
 
@@ -145,7 +160,7 @@ TEST(Eip1559TransactionUnitTest, Serialization) {
 
   base::Value tx_value = tx.ToValue();
   auto tx_from_value = Eip1559Transaction::FromValue(tx_value);
-  ASSERT_NE(tx_from_value, absl::nullopt);
+  ASSERT_NE(tx_from_value, nullptr);
   EXPECT_EQ(*tx_from_value, tx);
 }
 
