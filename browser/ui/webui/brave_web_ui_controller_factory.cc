@@ -19,6 +19,7 @@
 #include "brave/common/pref_names.h"
 #include "brave/common/webui_url_constants.h"
 #include "brave/components/brave_wallet/common/buildflags/buildflags.h"
+#include "brave/components/brave_vpn/buildflags/buildflags.h"
 #include "brave/components/ipfs/buildflags/buildflags.h"
 #include "brave/components/tor/buildflags/buildflags.h"
 #include "build/build_config.h"
@@ -38,6 +39,10 @@
 #include "brave/browser/ui/webui/brave_wallet/wallet_page_ui.h"
 #include "brave/browser/ui/webui/brave_wallet/wallet_panel_ui.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
+#endif
+
+#if BUILDFLAG(ENABLE_BRAVE_VPN) && !defined(OS_ANDROID)
+#include "brave/browser/ui/webui/brave_vpn_webui.h"
 #endif
 
 #if BUILDFLAG(ETHEREUM_REMOTE_CLIENT_ENABLED)
@@ -67,6 +72,7 @@ typedef WebUIController* (*WebUIFactoryFunction)(WebUI* web_ui,
 
 WebUIController* NewWebUI(WebUI* web_ui, const GURL& url) {
   auto host = url.host_piece();
+  LOG(ERROR) << host << "\n";
   Profile* profile = Profile::FromBrowserContext(
       web_ui->GetWebContents()->GetBrowserContext());
   if (host == kAdblockHost) {
@@ -89,6 +95,10 @@ WebUIController* NewWebUI(WebUI* web_ui, const GURL& url) {
   } else if (host == kWalletPanelHost) {
     return new WalletPanelUI(web_ui);
 #endif  // BUILDFLAG(BRAVE_WALLET_ENABLED)
+#if BUILDFLAG(ENABLE_BRAVE_VPN)
+  } else if (host == "vpn-panel.top-chrome") {
+      return new VPNPanelUI(web_ui);
+#endif // BUILDFLAG(ENABLE_BRAVE_VPN)
   } else if (host == kRewardsPageHost) {
     return new BraveRewardsPageUI(web_ui, url.host());
   } else if (host == kRewardsInternalsHost) {
@@ -124,6 +134,9 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
       (url.host_piece() == kIPFSWebUIHost &&
        base::FeatureList::IsEnabled(ipfs::features::kIpfsFeature)) ||
 #endif  // BUILDFLAG(IPFS_ENABLED)
+#if BUILDFLAG(BRAVE_WALLET_ENABLED) && !defined(OS_ANDROID)
+      url.host_piece() == "vpn-panel.top-chrome" ||
+#endif
 #if BUILDFLAG(BRAVE_WALLET_ENABLED) && !defined(OS_ANDROID)
       url.host_piece() == kWalletPanelHost ||
       url.host_piece() == kWalletPageHost ||

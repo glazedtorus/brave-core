@@ -4,11 +4,11 @@
 # you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import("//brave/components/common/typescript.gni")
-import("//mojo/public/tools/bindings/mojom.gni")
-import("//tools/grit/preprocess_if_expr.gni")
+# import("//mojo/public/tools/bindings/mojom.gni")
+# import("//tools/grit/preprocess_if_expr.gni")
 
-preprocess_folder = "preprocessed"
-preprocess_panel_manifest = "preprocessed_panel_manifest.json"
+# preprocess_folder = "preprocessed"
+# preprocess_panel_manifest = "preprocessed_panel_manifest.json"
 
 transpile_web_ui("brave_vpn_panel_ui") {
   entry_points = [ [
@@ -16,10 +16,6 @@ transpile_web_ui("brave_vpn_panel_ui") {
         rebase_path("vpn_panel.tsx"),
       ] ]
   resource_name = "brave_vpn_panel"
-  deps = [
-    ":preprocess_panel",
-    ":wallet_panel_api_proxy",
-  ]
 }
 
 pack_web_resources("brave_vpn_panel_generated") {
@@ -28,9 +24,17 @@ pack_web_resources("brave_vpn_panel_generated") {
   deps = [ ":brave_vpn_panel_ui" ]
 }
 
-preprocess_if_expr("preprocess_panel") {
-  in_folder = "./"
-  out_folder = "$target_gen_dir/$preprocess_folder"
-  out_manifest = "$target_gen_dir/$preprocess_panel_manifest"
-  in_files = [ "wallet_panel_api_proxy.js" ]
-}
+# preprocess_if_expr("preprocess_panel") {
+#   in_folder = "./"
+#   out_folder = "$target_gen_dir/$preprocess_folder"
+#   out_manifest = "$target_gen_dir/$preprocess_panel_manifest"
+#   in_files = [ "wallet_panel_api_proxy.js" ]
+# }
+
+# js_library("wallet_panel_api_proxy") {
+#   deps = [
+#     "//brave/components/brave_wallet/common:mojom_js_library_for_compile",
+#     "//ui/webui/resources/js:cr.m",
+#     "//url/mojom:url_mojom_gurl_js_library_for_compile",
+#   ]
+# }

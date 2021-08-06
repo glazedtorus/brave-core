@@ -9,10 +9,10 @@ import Main from './components/main'
 import { PanelWrapper } from './style'
 
 function App () {
-  const [initialThemeType, setInitialThemeType] = React.useState<chrome.braveTheme.ThemeType>()
-  React.useEffect(() => {
-    chrome.braveTheme.getBraveThemeType(setInitialThemeType)
-  }, [])
+  // const [initialThemeType, setInitialThemeType] = React.useState<chrome.braveTheme.ThemeType>()
+  // React.useEffect(() => {
+  //   chrome.braveTheme.getBraveThemeType(setInitialThemeType)
+  // }, [])
   return (
     <PanelWrapper>
       <Main />

@@ -472,10 +472,15 @@ source_set("ui") {
 
   if (enable_brave_vpn && toolkit_views) {
     sources += [
+      "webui/brave_vpn_webui.cc",
+      "webui/brave_vpn_webui.h",
       "views/toolbar/brave_vpn_button.cc",
       "views/toolbar/brave_vpn_button.h",
     ]
-    deps += [ "//brave/components/brave_vpn" ]
+    deps += [
+      "//brave/components/brave_vpn",
+      "//brave/components/brave_vpn/resources/panel:brave_vpn_panel_generated",
+    ]
   }
 
   if (is_win && is_official_build) {
