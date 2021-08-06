@@ -4,7 +4,8 @@
 # you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import("//brave/components/common/typescript.gni")
-# import("//mojo/public/tools/bindings/mojom.gni")
+# import("//third_party/closure_compiler/compile_js.gni")
+import("//mojo/public/tools/bindings/mojom.gni")
 # import("//tools/grit/preprocess_if_expr.gni")
 
 # preprocess_folder = "preprocessed"
@@ -20,9 +21,15 @@ transpile_web_ui("brave_vpn_panel_ui") {
 
 pack_web_resources("brave_vpn_panel_generated") {
   resource_name = "brave_vpn_panel"
-  output_dir = "$root_gen_dir/brave/components/brave_vpn_panel/resources"
+  output_dir = "$root_gen_dir/brave/components/brave_vpn/resources/panel"
   deps = [ ":brave_vpn_panel_ui" ]
 }
+
+# js_library("brave_theme") {
+#   deps = [
+#     "//ui/webui/resources/js:cr.m",
+#   ]
+# }
 
 # preprocess_if_expr("preprocess_panel") {
 #   in_folder = "./"
@@ -31,10 +38,3 @@ pack_web_resources("brave_vpn_panel_generated") {
 #   in_files = [ "wallet_panel_api_proxy.js" ]
 # }
 
-# js_library("wallet_panel_api_proxy") {
-#   deps = [
-#     "//brave/components/brave_wallet/common:mojom_js_library_for_compile",
-#     "//ui/webui/resources/js:cr.m",
-#     "//url/mojom:url_mojom_gurl_js_library_for_compile",
-#   ]
-# }

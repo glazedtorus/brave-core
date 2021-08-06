@@ -5,18 +5,32 @@
 
 import * as React from 'react'
 import { render } from 'react-dom'
+
+import BraveCoreThemeProvider from '../../../common/BraveCoreThemeProvider'
+import walletDarkTheme from './theme/wallet-dark'
+import walletLightTheme from './theme/wallet-light'
 import Main from './components/main'
 import { PanelWrapper } from './style'
 
 function App () {
-  // const [initialThemeType, setInitialThemeType] = React.useState<chrome.braveTheme.ThemeType>()
-  // React.useEffect(() => {
-  //   chrome.braveTheme.getBraveThemeType(setInitialThemeType)
-  // }, [])
+  const [initialThemeType, setInitialThemeType] = React.useState<chrome.braveTheme.ThemeType>()
+  React.useEffect(() => {
+    chrome.braveTheme.getBraveThemeType(setInitialThemeType)
+  }, [])
   return (
-    <PanelWrapper>
-      <Main />
-    </PanelWrapper>
+    <React.Fragment>
+      {initialThemeType &&
+        <BraveCoreThemeProvider
+          initialThemeType={initialThemeType}
+          dark={walletDarkTheme}
+          light={walletLightTheme}
+        >
+          <PanelWrapper>
+            <Main />
+          </PanelWrapper>
+        </BraveCoreThemeProvider>
+      }
+    </React.Fragment>
   )
 }
 
