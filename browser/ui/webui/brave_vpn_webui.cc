@@ -14,6 +14,7 @@
 #include "components/favicon_base/favicon_url_parser.h"
 #include "components/grit/brave_components_resources.h"
 #include "brave/components/brave_vpn/resources/panel/grit/brave_vpn_panel_generated_map.h"
+#include "brave/common/webui_url_constants.h"
 
 VPNPanelUI::VPNPanelUI(content::WebUI* web_ui)
   : ui::MojoBubbleWebUIController(web_ui, false) {
@@ -21,7 +22,7 @@ VPNPanelUI::VPNPanelUI(content::WebUI* web_ui)
   LOG(ERROR) << web_ui << "\n";
 
   content::WebUIDataSource* source =
-    content::WebUIDataSource::Create("vpn-panel.top-chrome");
+    content::WebUIDataSource::Create(kVPNPanelHost);
 
   webui::SetupWebUIDataSource(source,
                               base::make_span(kBraveVpnPanelGenerated,

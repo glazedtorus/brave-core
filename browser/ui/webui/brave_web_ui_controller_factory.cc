@@ -95,7 +95,7 @@ WebUIController* NewWebUI(WebUI* web_ui, const GURL& url) {
     return new WalletPanelUI(web_ui);
 #endif  // BUILDFLAG(BRAVE_WALLET_ENABLED)
 #if BUILDFLAG(ENABLE_BRAVE_VPN)
-  } else if (host == "vpn-panel.top-chrome") {
+  } else if (host == kVPNPanelHost) {
       return new VPNPanelUI(web_ui);
 #endif // BUILDFLAG(ENABLE_BRAVE_VPN)
   } else if (host == kRewardsPageHost) {
@@ -134,7 +134,7 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
        base::FeatureList::IsEnabled(ipfs::features::kIpfsFeature)) ||
 #endif  // BUILDFLAG(IPFS_ENABLED)
 #if BUILDFLAG(ENABLE_BRAVE_VPN) && !defined(OS_ANDROID)
-      url.host_piece() == "vpn-panel.top-chrome" ||
+      url.host_piece() == kVPNPanelHost ||
 #endif
 #if BUILDFLAG(BRAVE_WALLET_ENABLED) && !defined(OS_ANDROID)
       url.host_piece() == kWalletPanelHost ||
