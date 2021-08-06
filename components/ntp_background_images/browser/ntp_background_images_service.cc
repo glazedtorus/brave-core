@@ -437,8 +437,6 @@ NTPBackgroundImagesService::GetBrandedImagesData(bool super_referral) const {
     // Don't give SI data until we can confirm this is not SR.
     // W/o this check, NTP could show SI images before getting SR data at first
     // run.
-    local_pref_->Set(prefs::kNewTabPageCachedSuperReferralComponentInfo,
-                   base::Value(base::Value::Type::DICTIONARY));
     if (local_pref_->FindPreference(
           prefs::kNewTabPageCachedSuperReferralComponentInfo)->
               IsDefaultValue()) {

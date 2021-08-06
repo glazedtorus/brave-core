@@ -9,8 +9,9 @@
 
 namespace ntp_background_images {
 
-absl::optional<BackgroundImagesComponentData> GetBackgroundImagesComponentData() {
-  static const BackgroundImagesComponentData data = {
+absl::optional<SponsoredImagesComponentData> GetBackgroundImagesComponentData() {
+  static const SponsoredImagesComponentData data = {
+      "",
       "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4L9XGAiVhCL8oi5aQhFrVllsw6VebXigTj5ow3e0fYeEztjM9FOgqMD6pl0AB8u05xKUPcdpIZqCguEzXyXh5vn+BWoEGtVezEEfjd33T4drJAYwEBvgWcFVVLNWku1/53f6TZp8IiiaOhKIANUtn/Zvw/0nUYa10nwxK4P3he4Ahj0CO6HVeu9zNRCdZFSkYdMnPnNYTU+qN88OT1DBsV1xQgd3qK+MkzPDF1okHi9a+IXiHa3FVY++QmtSrMgetJnS/qBt6VsZcejcQCd1KIpgHNyoVl5rodtBRj25o48SxYePrssMRTv9vAQmRUZZukOIL/HdeqjCHIOSQTrFEQIDAQAB",  // NOLINT
       "aoojcmojmmcbpfgoecoadbdpnagfchel"
   };

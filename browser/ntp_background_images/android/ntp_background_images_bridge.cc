@@ -147,14 +147,16 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
 
   auto* image_path =
       data.FindStringKey(ntp_background_images::kWallpaperImagePathKey);
+  auto is_background = data.FindBoolKey(
+      ntp_background_images::kIsBackgroundKey).value_or(true);
   auto* creative_instance_id =
       data.FindStringKey(ntp_background_images::kCreativeInstanceIDKey);
   auto* logo_image_path =
       data.FindStringPath(ntp_background_images::kLogoImagePath);
   LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: image_path: " << (*image_path);
   LOG(WARNING) << "NTPBackgroundImagesBridge::CreateWallpaper: !logo_image_path: " << (!logo_image_path);
-  // creative_instance_id and logo_image_path only exists in sponsored images
-  if (!image_path || (creative_instance_id && !logo_image_path))
+  // logo_image_path only exists in sponsored images
+  if (!image_path || (!is_background && !logo_image_path))
     return base::android::ScopedJavaLocalRef<jobject>();
 
   auto focal_point_x = data.FindIntKey(
@@ -181,6 +183,7 @@ NTPBackgroundImagesBridge::CreateWallpaper() {
                                                         : ""),
       ConvertUTF8ToJavaString(env, theme_name ? *theme_name : ""),
       is_sponsored,
+      is_background,
       ConvertUTF8ToJavaString(env, creative_instance_id ? *creative_instance_id
                                                         : ""),
       ConvertUTF8ToJavaString(env, author ? *author : ""),

@@ -129,9 +129,11 @@ public class NTPUtil {
         if(sponsoredTab.shouldShowBanner()) {
             if(PackageUtils.isFirstInstall(context)
                 && ntpImage instanceof Wallpaper
+                && !((Wallpaper) ntpImage).isBackground()
                 && !BraveAdsNativeHelper.nativeIsBraveAdsEnabled(Profile.getLastUsedRegularProfile())) {
                 return SponsoredImageUtil.BR_ON_ADS_OFF ;
             } else if (ntpImage instanceof Wallpaper
+                    && !((Wallpaper) ntpImage).isBackground()
                     && BraveAdsNativeHelper.nativeIsBraveAdsEnabled(
                             Profile.getLastUsedRegularProfile())) {
                 return SponsoredImageUtil.BR_ON_ADS_ON;

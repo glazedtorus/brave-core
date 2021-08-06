@@ -31,6 +31,7 @@ void ViewCounterModel::ResetCurrentWallpaperImageIndex() {
 
 void ViewCounterModel::RegisterPageView() {
   DCHECK_NE(-1, total_image_count_);
+  DCHECK_NE(-1, total_branded_image_count_);
 
   LOG(WARNING) << "ViewCounterModel::RegisterPageView: ignore_count_to_branded_wallpaper_: " << ignore_count_to_branded_wallpaper_;
   if (ignore_count_to_branded_wallpaper_) {

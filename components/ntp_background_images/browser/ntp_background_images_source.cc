@@ -15,7 +15,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
-#include "brave/components/ntp_background_images/browser/ntp_background_images_data.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_service.h"
 #include "brave/components/ntp_background_images/browser/ntp_sponsored_images_data.h"
 #include "brave/components/ntp_background_images/browser/url_constants.h"
@@ -35,10 +34,6 @@ absl::optional<std::string> ReadFileToString(const base::FilePath& path) {
 
 bool IsSuperReferralPath(const std::string& path) {
   return path.rfind(kSuperReferralPath, 0) == 0;
-}
-
-bool IsSponsoredImagesPath(const std::string& path) {
-  return path.rfind(kSponsoredImagesPath, 0) == 0;
 }
 
 }  // namespace
@@ -74,43 +69,28 @@ void NTPBackgroundImagesSource::StartDataRequest(
     return;
   }
 
+  auto* images_data = service_->GetBrandedImagesData(IsSuperReferralPath(path));
+
+  if (!images_data) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(std::move(callback),
+                                  scoped_refptr<base::RefCountedMemory>()));
+    return;
+  }
+
   base::FilePath image_file_path;
-  if (IsSuperReferralPath(path) || IsSponsoredImagesPath(path)) {
-      auto* images_data = service_->GetBrandedImagesData(IsSuperReferralPath(path));
-
-    if (!images_data) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(std::move(callback),
-                                    scoped_refptr<base::RefCountedMemory>()));
-      return;
-    }
-
-    if (IsLogoPath(path)) {
-      if (IsDefaultLogoPath(path)) {
-        image_file_path = images_data->default_logo.image_file;
-      } else {
-        DCHECK(images_data->backgrounds[GetLogoIndexFromPath(path)].logo);
-        image_file_path =
-            images_data->backgrounds[GetLogoIndexFromPath(path)].logo->image_file;
-      }
+  if (IsLogoPath(path)) {
+    if (IsDefaultLogoPath(path)) {
+      image_file_path = images_data->default_logo.image_file;
     } else {
-      DCHECK(IsWallpaperPath(path));
+      DCHECK(images_data->backgrounds[GetLogoIndexFromPath(path)].logo);
       image_file_path =
-          images_data->backgrounds[GetWallpaperIndexFromPath(path)].image_file;
+          images_data->backgrounds[GetLogoIndexFromPath(path)].logo->image_file;
     }
   } else {
-    auto* images_data = service_->GetBackgroundImagesData();
-
-    if (!images_data) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(std::move(callback),
-                                    scoped_refptr<base::RefCountedMemory>()));
-      return;
-    }
-
     DCHECK(IsWallpaperPath(path));
-      image_file_path =
-          images_data->backgrounds[GetWallpaperIndexFromPath(path)].image_file;
+    image_file_path =
+        images_data->backgrounds[GetWallpaperIndexFromPath(path)].image_file;
   }
 
   GetImageFile(image_file_path, std::move(callback));
@@ -204,36 +184,20 @@ int NTPBackgroundImagesSource::GetLogoIndexFromPath(
 
 int NTPBackgroundImagesSource::GetWallpaperIndexFromPath(
     const std::string& path) const {
-  if (const bool is_super_referral_path = IsSuperReferralPath(path) || IsSponsoredImagesPath(path)) {
-    auto* images_data = service_->GetBrandedImagesData(IsSuperReferralPath(path));
-    if (!images_data)
-      return -1;
-    const int wallpaper_count = images_data->backgrounds.size();
+  const bool is_super_referral_path = IsSuperReferralPath(path);
+  auto* images_data = service_->GetBrandedImagesData(is_super_referral_path);
+  if (!images_data)
+    return -1;
 
-    for (int i = 0; i < wallpaper_count; ++i) {
-      const std::string generated_path =
-          base::StringPrintf("%s%s%d.jpg",
-                            is_super_referral_path ? kSuperReferralPath
-                                                    : kSponsoredImagesPath,
-                            kWallpaperPathPrefix, i);
-      if (path.compare(generated_path) == 0)
-        return i;
-    }
-  } else {
-    auto* images_data =  service_->GetBackgroundImagesData();
-    if (!images_data)
-      return -1;
-    const int wallpaper_count = images_data->backgrounds.size();
-
-    for (int i = 0; i < wallpaper_count; ++i) {
-      LOG(WARNING) << "NTPBackgroundImagesSource::GetWallpaperIndexFromPath: 2: path: " << path;
-      const std::string generated_path =
-          base::StringPrintf("%s%s%d.jpg",
-                            kSponsoredImagesPath,
-                            kWallpaperPathPrefix, i);
-      if (path.compare(generated_path) == 0)
-        return i;
-    }
+  const int wallpaper_count = images_data->backgrounds.size();
+  for (int i = 0; i < wallpaper_count; ++i) {
+    const std::string generated_path =
+        base::StringPrintf("%s%s%d.jpg",
+                           is_super_referral_path ? kSuperReferralPath
+                                                  : kSponsoredImagesPath,
+                           kWallpaperPathPrefix, i);
+    if (path.compare(generated_path) == 0)
+      return i;
   }
 
   return -1;
