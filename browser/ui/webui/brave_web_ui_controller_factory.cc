@@ -72,7 +72,6 @@ typedef WebUIController* (*WebUIFactoryFunction)(WebUI* web_ui,
 
 WebUIController* NewWebUI(WebUI* web_ui, const GURL& url) {
   auto host = url.host_piece();
-  LOG(ERROR) << host << "\n";
   Profile* profile = Profile::FromBrowserContext(
       web_ui->GetWebContents()->GetBrowserContext());
   if (host == kAdblockHost) {
@@ -134,7 +133,7 @@ WebUIFactoryFunction GetWebUIFactoryFunction(WebUI* web_ui,
       (url.host_piece() == kIPFSWebUIHost &&
        base::FeatureList::IsEnabled(ipfs::features::kIpfsFeature)) ||
 #endif  // BUILDFLAG(IPFS_ENABLED)
-#if BUILDFLAG(BRAVE_WALLET_ENABLED) && !defined(OS_ANDROID)
+#if BUILDFLAG(ENABLE_BRAVE_VPN) && !defined(OS_ANDROID)
       url.host_piece() == "vpn-panel.top-chrome" ||
 #endif
 #if BUILDFLAG(BRAVE_WALLET_ENABLED) && !defined(OS_ANDROID)
