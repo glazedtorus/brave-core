@@ -26,14 +26,14 @@ void AdNotification::RemoveObserver(AdNotificationObserver* observer) {
   observers_.RemoveObserver(observer);
 }
 
-void AdNotification::FireEvent(const std::string& uuid,
-                               const AdNotificationEventType event_type) {
+void AdNotification::FireEvent(
+    const std::string& uuid,
+    const mojom::AdNotificationEventType event_type) {
   DCHECK(!uuid.empty());
 
   AdNotificationInfo ad;
   if (!AdNotifications::Get()->Get(uuid, &ad)) {
-    BLOG(1,
-         "Failed to fire ad notification event due to missing uuid " << uuid);
+    BLOG(1, "Failed to fire ad notification event due to missing uuid " << uuid);
     NotifyAdNotificationEventFailed(uuid, event_type);
     return;
   }
@@ -48,29 +48,29 @@ void AdNotification::FireEvent(const std::string& uuid,
 
 void AdNotification::NotifyAdNotificationEvent(
     const AdNotificationInfo& ad,
-    const AdNotificationEventType event_type) const {
+    const mojom::AdNotificationEventType event_type) const {
   switch (event_type) {
-    case AdNotificationEventType::kServed: {
+    case mojom::AdNotificationEventType::kServed: {
       NotifyAdNotificationServed(ad);
       break;
     }
 
-    case AdNotificationEventType::kViewed: {
+    case mojom::AdNotificationEventType::kViewed: {
       NotifyAdNotificationViewed(ad);
       break;
     }
 
-    case AdNotificationEventType::kClicked: {
+    case mojom::AdNotificationEventType::kClicked: {
       NotifyAdNotificationClicked(ad);
       break;
     }
 
-    case AdNotificationEventType::kDismissed: {
+    case mojom::AdNotificationEventType::kDismissed: {
       NotifyAdNotificationDismissed(ad);
       break;
     }
 
-    case AdNotificationEventType::kTimedOut: {
+    case mojom::AdNotificationEventType::kTimedOut: {
       NotifyAdNotificationTimedOut(ad);
       break;
     }
@@ -114,7 +114,7 @@ void AdNotification::NotifyAdNotificationTimedOut(
 
 void AdNotification::NotifyAdNotificationEventFailed(
     const std::string& uuid,
-    const AdNotificationEventType event_type) const {
+    const mojom::AdNotificationEventType event_type) const {
   for (AdNotificationObserver& observer : observers_) {
     observer.OnAdNotificationEventFailed(uuid, event_type);
   }

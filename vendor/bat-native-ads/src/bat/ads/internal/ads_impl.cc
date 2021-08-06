@@ -319,21 +319,23 @@ bool AdsImpl::GetAdNotification(const std::string& uuid,
   return ad_notifications_->Get(uuid, notification);
 }
 
-void AdsImpl::OnAdNotificationEvent(const std::string& uuid,
-                                    const AdNotificationEventType event_type) {
+void AdsImpl::OnAdNotificationEvent(
+    const std::string& uuid,
+    const mojom::AdNotificationEventType event_type) {
   ad_notification_->FireEvent(uuid, event_type);
 }
 
-void AdsImpl::OnNewTabPageAdEvent(const std::string& uuid,
-                                  const std::string& creative_instance_id,
-                                  const NewTabPageAdEventType event_type) {
+void AdsImpl::OnNewTabPageAdEvent(
+    const std::string& uuid,
+    const std::string& creative_instance_id,
+    const mojom::NewTabPageAdEventType event_type) {
   new_tab_page_ad_->FireEvent(uuid, creative_instance_id, event_type);
 }
 
 void AdsImpl::OnPromotedContentAdEvent(
     const std::string& uuid,
     const std::string& creative_instance_id,
-    const PromotedContentAdEventType event_type) {
+    const mojom::PromotedContentAdEventType event_type) {
   promoted_content_ad_->FireEvent(uuid, creative_instance_id, event_type);
 }
 
@@ -349,12 +351,11 @@ void AdsImpl::GetInlineContentAd(const std::string& dimensions,
 void AdsImpl::OnInlineContentAdEvent(
     const std::string& uuid,
     const std::string& creative_instance_id,
-    const InlineContentAdEventType event_type) {
+    const mojom::InlineContentAdEventType event_type) {
   inline_content_ad_->FireEvent(uuid, creative_instance_id, event_type);
 }
 
-void AdsImpl::PurgeOrphanedAdEventsForType(
-    const mojom::BraveAdsAdType ad_type) {
+void AdsImpl::PurgeOrphanedAdEventsForType(const mojom::AdType ad_type) {
   PurgeOrphanedAdEvents(ad_type, [ad_type](const Result result) {
     if (result != SUCCESS) {
       BLOG(0, "Failed to purge orphaned ad events for " << ad_type);
@@ -723,7 +724,7 @@ void AdsImpl::OnCatalogUpdated(const Catalog& catalog) {
 }
 
 void AdsImpl::OnDidServeAdNotification(const AdNotificationInfo& ad) {
-  ad_notification_->FireEvent(ad.uuid, AdNotificationEventType::kServed);
+  ad_notification_->FireEvent(ad.uuid, mojom::AdNotificationEventType::kServed);
 }
 
 void AdsImpl::OnAdNotificationViewed(const AdNotificationInfo& ad) {
@@ -736,26 +737,25 @@ void AdsImpl::OnAdNotificationClicked(const AdNotificationInfo& ad) {
   account_->Deposit(ad.creative_instance_id, ConfirmationType::kClicked);
 
   epsilon_greedy_bandit_processor_->Process(
-      {ad.segment, AdNotificationEventType::kClicked});
+      {ad.segment, mojom::AdNotificationEventType::kClicked});
 }
 
 void AdsImpl::OnAdNotificationDismissed(const AdNotificationInfo& ad) {
   account_->Deposit(ad.creative_instance_id, ConfirmationType::kDismissed);
 
   epsilon_greedy_bandit_processor_->Process(
-      {ad.segment, AdNotificationEventType::kDismissed});
+      {ad.segment, mojom::AdNotificationEventType::kDismissed});
 }
 
 void AdsImpl::OnAdNotificationTimedOut(const AdNotificationInfo& ad) {
   epsilon_greedy_bandit_processor_->Process(
-      {ad.segment, AdNotificationEventType::kTimedOut});
+      {ad.segment, mojom::AdNotificationEventType::kTimedOut});
 }
 
 void AdsImpl::OnAdNotificationEventFailed(
     const std::string& uuid,
-    const AdNotificationEventType event_type) {
-  BLOG(1, "Failed to fire ad notification " << event_type << " event for uuid "
-                                            << uuid);
+    const mojom::AdNotificationEventType event_type) {
+  BLOG(1, "Failed to fire ad notification " << event_type << " event for uuid " << uuid);
 }
 
 void AdsImpl::OnNewTabPageAdViewed(const NewTabPageAdInfo& ad) {
@@ -779,10 +779,8 @@ void AdsImpl::OnNewTabPageAdClicked(const NewTabPageAdInfo& ad) {
 void AdsImpl::OnNewTabPageAdEventFailed(
     const std::string& uuid,
     const std::string& creative_instance_id,
-    const NewTabPageAdEventType event_type) {
-  BLOG(1, "Failed to fire new tab page ad "
-              << event_type << " event for uuid " << uuid
-              << " and creative instance id " << creative_instance_id);
+    const mojom::NewTabPageAdEventType event_type) {
+  BLOG(1, "Failed to fire new tab page ad " << event_type << " event for uuid " << uuid << " and creative instance id " << creative_instance_id);
 }
 
 void AdsImpl::OnPromotedContentAdViewed(const PromotedContentAdInfo& ad) {
@@ -798,15 +796,13 @@ void AdsImpl::OnPromotedContentAdClicked(const PromotedContentAdInfo& ad) {
 void AdsImpl::OnPromotedContentAdEventFailed(
     const std::string& uuid,
     const std::string& creative_instance_id,
-    const PromotedContentAdEventType event_type) {
-  BLOG(1, "Failed to fire promoted content ad "
-              << event_type << " event for uuid " << uuid
-              << " and creative instance id " << creative_instance_id);
+    const mojom::PromotedContentAdEventType event_type) {
+  BLOG(1, "Failed to fire promoted content ad " << event_type << " event for uuid " << uuid << " and creative instance id " << creative_instance_id);
 }
 
 void AdsImpl::OnDidServeInlineContentAd(const InlineContentAdInfo& ad) {
   inline_content_ad_->FireEvent(ad.uuid, ad.creative_instance_id,
-                                InlineContentAdEventType::kServed);
+                                mojom::InlineContentAdEventType::kServed);
 }
 
 void AdsImpl::OnInlineContentAdViewed(const InlineContentAdInfo& ad) {
@@ -822,10 +818,8 @@ void AdsImpl::OnInlineContentAdClicked(const InlineContentAdInfo& ad) {
 void AdsImpl::OnInlineContentAdEventFailed(
     const std::string& uuid,
     const std::string& creative_instance_id,
-    const InlineContentAdEventType event_type) {
-  BLOG(1, "Failed to fire inline content ad "
-              << event_type << " event for uuid " << uuid
-              << " and creative instance id " << creative_instance_id);
+    const mojom::InlineContentAdEventType event_type) {
+  BLOG(1, "Failed to fire inline content ad " << event_type << " event for uuid " << uuid << " and creative instance id " << creative_instance_id);
 }
 
 void AdsImpl::OnAdTransfer(const AdInfo& ad) {
