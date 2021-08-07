@@ -37,3 +37,5 @@ VPNPanelUI::VPNPanelUI(content::WebUI* web_ui)
 }
 
 VPNPanelUI::~VPNPanelUI() = default;
+
+WEB_UI_CONTROLLER_TYPE_IMPL(VPNPanelUI)

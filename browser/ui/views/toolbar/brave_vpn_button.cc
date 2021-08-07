@@ -12,6 +12,7 @@
 #include "brave/app/vector_icons/vector_icons.h"
 #include "brave/browser/themes/theme_properties.h"
 #include "brave/grit/brave_generated_resources.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/layout_constants.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_ink_drop_util.h"
@@ -23,7 +24,7 @@
 #include "ui/views/background.h"
 #include "ui/views/border.h"
 #include "ui/views/controls/highlight_path_generator.h"
-
+#include "brave/common/webui_url_constants.h"
 namespace {
 
 constexpr int kButtonRadius = 47;
@@ -47,9 +48,10 @@ class BraveVPNButtonHighlightPathGenerator
 
 }  // namespace
 
-BraveVPNButton::BraveVPNButton()
+BraveVPNButton::BraveVPNButton(Profile* profile)
     : ToolbarButton(base::BindRepeating(&BraveVPNButton::OnButtonPressed,
-                                        base::Unretained(this))) {
+                                        base::Unretained(this))),
+      webui_bubble_manager_(this, profile, GURL(kVPNPanelHost), 1, true) {
   // Replace ToolbarButton's highlight path generator.
   views::HighlightPathGenerator::Install(
       this, std::make_unique<BraveVPNButtonHighlightPathGenerator>(
@@ -67,6 +69,8 @@ BraveVPNButton::BraveVPNButton()
 
   UpdateButtonState();
 }
+
+BraveVPNButton::~BraveVPNButton() = default;
 
 void BraveVPNButton::UpdateColorsAndInsets() {
   if (const auto* tp = GetThemeProvider()) {
@@ -114,7 +118,8 @@ void BraveVPNButton::OnButtonPressed(const ui::Event& event) {
 }
 
 void BraveVPNButton::ShowBraveVPNPanel() {
-  NOTIMPLEMENTED();
+  // NOTIMPLEMENTED();
+  webui_bubble_manager_.ShowBubble();
 }
 
 BEGIN_METADATA(BraveVPNButton, LabelButton)

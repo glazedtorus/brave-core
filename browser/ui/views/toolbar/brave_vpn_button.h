@@ -8,13 +8,14 @@
 
 #include "chrome/browser/ui/views/toolbar/toolbar_button.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-
+#include "chrome/browser/ui/views/bubble/webui_bubble_manager.h"
+#include "brave/browser/ui/webui/brave_vpn_webui.h"
 class BraveVPNButton : public ToolbarButton {
  public:
   METADATA_HEADER(BraveVPNButton);
 
-  BraveVPNButton();
-  ~BraveVPNButton() override = default;
+  explicit BraveVPNButton(Profile* profile);
+  ~BraveVPNButton() override;
 
   BraveVPNButton(const BraveVPNButton&) = delete;
   BraveVPNButton& operator=(const BraveVPNButton&) = delete;
@@ -28,6 +29,8 @@ class BraveVPNButton : public ToolbarButton {
 
   void OnButtonPressed(const ui::Event& event);
   void ShowBraveVPNPanel();
+
+  WebUIBubbleManagerT<VPNPanelUI> webui_bubble_manager_;
 };
 
 #endif  // BRAVE_BROWSER_UI_VIEWS_TOOLBAR_BRAVE_VPN_BUTTON_H_

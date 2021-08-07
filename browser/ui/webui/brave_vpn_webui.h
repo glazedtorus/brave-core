@@ -14,6 +14,8 @@ class VPNPanelUI : public ui::MojoBubbleWebUIController {
     VPNPanelUI(const VPNPanelUI&) = delete;
     VPNPanelUI& operator=(const VPNPanelUI&) = delete;
     ~VPNPanelUI() override;
+  private:
+    WEB_UI_CONTROLLER_TYPE_DECL();
 };
 
 #endif  // BRAVE_BROWSER_UI_WEBUI_BRAVE_VPN_PANEL_UI_H_
