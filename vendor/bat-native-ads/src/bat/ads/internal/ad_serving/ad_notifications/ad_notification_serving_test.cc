@@ -172,4 +172,31 @@ TEST_F(BatAdsAdNotificationServingTest,
   // Assert
 }
 
+TEST_F(BatAdsAdNotificationServingTest, ServeAdV2) {
+  // Arrange
+  RecordUserActivityEvents();
+
+  CreativeAdNotificationList creative_ad_notifications;
+  CreativeAdNotificationInfo creative_ad_notification =
+      GetCreativeAdNotification();
+  creative_ad_notifications.push_back(creative_ad_notification);
+  // Save(creative_ad_notifications);
+
+  AdTargeting ad_targeting;
+  ad_targeting::geographic::SubdivisionTargeting subdivision_targeting;
+  resource::AntiTargeting anti_targeting_resource;
+  ad_notifications::AdServing ad_serving(&ad_targeting, &subdivision_targeting,
+      &anti_targeting_resource);
+
+  // Act
+  EXPECT_CALL(*ads_client_mock_,
+              ShowNotification(DoesMatchCreativeInstanceId(
+                  creative_ad_notification.creative_instance_id)))
+      .Times(1);
+
+  ServeAd();
+
+  // Assert
+}
+
 }  // namespace ads

@@ -265,4 +265,40 @@ TEST_F(BatAdsEligibleAdNotificationsTest, GetAdsForUnmatchedSegments) {
   // Assert
 }
 
+TEST_F(BatAdsEligibleAdNotificationsTest, GetV2) {
+  // Arrange
+  CreativeAdNotificationList creative_ad_notifications;
+
+  CreativeAdNotificationInfo creative_ad_notification_1 =
+      GetCreativeAdNotificationForSegment("technology & computing");
+  creative_ad_notifications.push_back(creative_ad_notification_1);
+
+  // CreativeAdNotificationInfo creative_ad_notification_2 =
+  //     GetCreativeAdNotificationForSegment("technology & computing-software");
+  // creative_ad_notifications.push_back(creative_ad_notification_2);
+
+  Save(creative_ad_notifications);
+
+  // Act
+  ad_targeting::geographic::SubdivisionTargeting subdivision_targeting;
+  resource::AntiTargeting anti_targeting_resource;
+  ad_notifications::EligibleAds eligible_ads(&subdivision_targeting,
+                                             &anti_targeting_resource);
+
+  const CreativeAdNotificationList expected_creative_ad_notifications =
+      creative_ad_notifications;
+
+  eligible_ads.Get(
+      {"foo"},
+      {"bar"},
+      [&expected_creative_ad_notifications](
+          const bool success,
+          const CreativeAdNotificationList& creative_ad_notifications) {
+        EXPECT_EQ(expected_creative_ad_notifications,
+                  creative_ad_notifications);
+      });
+
+  // Assert
+}
+
 }  // namespace ads
